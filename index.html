@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agenda Clínica - Daniel Marrero</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --ink: #0f172a;
+      --line: #bae6fd;
+      --brand: #0284c7;
+      --brand-soft: #e0f2fe;
+    }
+    body {
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 10% 15%, #dbeafe 0%, transparent 25%),
+        radial-gradient(circle at 90% 10%, #bae6fd 0%, transparent 22%),
+        #f8fafc;
+    }
+    .day-cell {
+      min-height: 92px;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+    .day-cell:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(2, 132, 199, 0.16);
+    }
+    .day-cell.selected {
+      border-color: var(--brand);
+      background: var(--brand-soft);
+      box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+    }
+    .sticky-head {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: #fff;
+    }
+    .slot-input {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.5rem;
+      padding: 0.45rem 0.55rem;
+      font-size: 0.85rem;
+      background: #fff;
+    }
+    .slot-input:focus {
+      outline: none;
+      border-color: #0284c7;
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+    .slot-col-red {
+      background: #fee2e2 !important;
+    }
+    .slot-col-yellow {
+      background: #fef9c3 !important;
+    }
+    .slot-action-btn {
+      border: 1px solid #ef4444;
+      color: #b91c1c;
+      background: #fff1f2;
+      border-radius: 0.5rem;
+      padding: 0.4rem 0.55rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      width: 100%;
+      white-space: nowrap;
+    }
+    .slot-action-btn:hover {
+      background: #ffe4e6;
+    }
+    .week-strip {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(180px, 1fr));
+      gap: 0.75rem;
+      overflow-x: auto;
+      padding-bottom: 0.25rem;
+    }
+    .week-day-card {
+      border: 1px solid #dbeafe;
+      border-radius: 0.75rem;
+      background: #fff;
+      padding: 0.6rem;
+      min-height: 130px;
+    }
+    .week-day-card.selected {
+      border-color: #0284c7;
+      box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+      background: #f0f9ff;
+    }
+    .hour-chip {
+      font-size: 0.67rem;
+      border-radius: 999px;
+      border: 1px solid #d1d5db;
+      padding: 0.13rem 0.45rem;
+      background: #fff;
+      color: #334155;
+      display: inline-block;
+      margin: 0.12rem;
+    }
+    .hour-chip.occupied {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #7f1d1d;
+    }
+    .hour-chip.free {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      color: #334155;
+    }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-panel {
+      width: min(1100px, 100%);
+      max-height: 90vh;
+      overflow: auto;
+      background: #fff;
+      border-radius: 1rem;
+      border: 1px solid #bae6fd;
+      box-shadow: 0 20px 45px rgba(2, 6, 23, 0.35);
+    }
+    .move-day-cell {
+      min-height: 78px;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.7rem;
+      text-align: left;
+      padding: 0.4rem;
+      background: #fff;
+      font-size: 0.8rem;
+    }
+    .move-day-cell:hover { border-color: #0ea5e9; }
+    .move-day-cell.selected {
+      border-color: #0284c7;
+      background: #e0f2fe;
+      box-shadow: 0 0 0 2px rgba(2,132,199,.18);
+    }
+    .move-hour-btn {
+      width: 100%;
+      border-radius: 0.55rem;
+      padding: 0.28rem 0.4rem;
+      border: 1px solid #cbd5e1;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+    .move-hour-btn.free {
+      background: #ffffff;
+      color: #0f172a;
+    }
+    .move-hour-btn.occupied {
+      background: #fee2e2;
+      border-color: #fca5a5;
+      color: #7f1d1d;
+    }
+  </style>
+</head>
+<body>
+  <div class="max-w-7xl mx-auto px-4 py-5 md:px-6 space-y-4">
+    <header class="bg-white rounded-2xl border border-sky-100 shadow-lg p-4 md:p-5">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 class="text-2xl md:text-3xl font-extrabold text-sky-800">Agenda Clínica</h1>
+          <p class="text-slate-600"><span class="text-xl md:text-2xl font-extrabold text-sky-900">Daniel Marrero</span> - Control de pacientes y reparto automático</p>
+        </div>
+        <div class="text-xs md:text-sm text-slate-600 bg-sky-50 border border-sky-100 rounded-xl px-3 py-2">
+          <p><strong>Horario editable:</strong> 08:00 a 21:00</p>
+          <p><strong>Guardado:</strong> Automático en este navegador</p>
+        </div>
+      </div>
+    </header>
+
+    <section class="grid lg:grid-cols-3 gap-4">
+      <article class="lg:col-span-2 bg-white rounded-2xl border border-sky-100 shadow-lg p-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2">
+            <button id="prevMonthBtn" class="bg-sky-700 hover:bg-sky-800 text-white px-3 py-2 rounded-lg text-sm">◀</button>
+            <h2 id="monthLabel" class="text-lg md:text-xl font-bold text-sky-800 min-w-[230px]"></h2>
+            <button id="nextMonthBtn" class="bg-sky-700 hover:bg-sky-800 text-white px-3 py-2 rounded-lg text-sm">▶</button>
+          </div>
+          <button id="todayBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg text-sm font-semibold">Hoy</button>
+        </div>
+
+        <div class="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-slate-500 mb-2">
+          <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>
+        </div>
+        <div id="monthGrid" class="grid grid-cols-7 gap-2"></div>
+      </article>
+
+      <article class="bg-white rounded-2xl border border-sky-100 shadow-lg p-4">
+        <h3 class="text-lg font-bold text-sky-800 mb-2">Resumen todo el tiempo</h3>
+        <div class="space-y-2 text-sm">
+          <div class="bg-slate-50 rounded-lg p-3"><span class="text-slate-500">Atenciones registradas:</span> <strong id="allCount">0</strong></div>
+          <div class="bg-slate-50 rounded-lg p-3"><span class="text-slate-500">Total cobrado:</span> <strong id="allGross">$0</strong></div>
+          <div class="bg-slate-50 rounded-lg p-3"><span class="text-slate-500">Daniel Marrero:</span> <strong id="allDaniel">$0</strong></div>
+          <div class="bg-slate-50 rounded-lg p-3"><span class="text-slate-500">Clínica Maria Elena Sanchez:</span> <strong id="allClinic">$0</strong></div>
+          <div class="bg-slate-50 rounded-lg p-3"><span class="text-slate-500">Clínica ABBA:</span> <strong id="allDoctors">$0</strong></div>
+        </div>
+      </article>
+    </section>
+
+    <section class="bg-white rounded-2xl border border-sky-100 shadow-lg p-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <h3 class="text-lg font-bold text-sky-800">Calendario semanal</h3>
+        <span id="weeklyLabel" class="text-xs bg-sky-50 text-sky-700 border border-sky-100 rounded-lg px-2 py-1 font-semibold"></span>
+      </div>
+      <div id="weeklyGrid" class="week-strip"></div>
+    </section>
+
+    <section class="bg-white rounded-2xl border border-sky-100 shadow-lg overflow-hidden">
+      <div class="p-4 border-b border-slate-100 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h3 class="text-xl font-bold text-sky-800">Agenda del día</h3>
+          <p id="selectedDayLabel" class="text-slate-600 text-sm">Selecciona un día del calendario</p>
+        </div>
+        <div class="text-xs bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-2 py-1">
+          * Completa paciente, tipo y monto. El reparto se calcula solo.
+        </div>
+      </div>
+
+      <div class="overflow-auto max-h-[60vh]">
+        <table class="min-w-[980px] w-full text-sm">
+          <thead class="sticky-head border-b border-slate-200">
+            <tr class="text-left text-slate-600 text-xs uppercase tracking-wide">
+              <th class="p-3">Hora</th>
+              <th class="p-3">Paciente</th>
+              <th class="p-3">Gestión</th>
+              <th class="p-3">Tipo de atención</th>
+              <th class="p-3">Origen</th>
+              <th class="p-3">Monto</th>
+              <th class="p-3">Daniel</th>
+              <th class="p-3">Clínica Maria Elena Sanchez</th>
+              <th class="p-3">Clínica ABBA</th>
+            </tr>
+          </thead>
+          <tbody id="scheduleBody"></tbody>
+        </table>
+      </div>
+
+      <div class="grid md:grid-cols-4 gap-2 p-4 border-t border-slate-100 bg-slate-50 text-sm">
+        <div>Total día: <strong id="dayGross">$0</strong></div>
+        <div>Daniel: <strong id="dayDaniel">$0</strong></div>
+        <div>Clínica Maria Elena Sanchez: <strong id="dayClinic">$0</strong></div>
+        <div>Clínica ABBA: <strong id="dayDoctors">$0</strong></div>
+      </div>
+    </section>
+
+    <section class="bg-white rounded-2xl border border-sky-100 shadow-lg p-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <h3 class="text-lg font-bold text-sky-800">Vista anual</h3>
+        <span id="yearLabel" class="text-sm bg-sky-50 text-sky-700 border border-sky-100 rounded-lg px-2 py-1 font-semibold"></span>
+      </div>
+      <div id="annualGrid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
+    </section>
+
+    <div id="moveModal" class="hidden modal-backdrop">
+      <div class="modal-panel">
+        <div class="p-4 border-b border-slate-200 flex items-center justify-between gap-2">
+          <div>
+            <h3 class="text-lg font-bold text-sky-800">Modificar hora de paciente</h3>
+            <p id="moveSourceInfo" class="text-sm text-slate-600"></p>
+          </div>
+          <button id="closeMoveModalBtn" class="bg-slate-100 hover:bg-slate-200 px-3 py-2 rounded-lg text-sm font-semibold">Cerrar</button>
+        </div>
+
+        <div class="p-4 space-y-4">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <div class="flex items-center gap-2">
+                <button id="movePrevMonthBtn" class="bg-sky-700 hover:bg-sky-800 text-white px-3 py-1.5 rounded-lg text-sm">◀</button>
+                <h4 id="moveMonthLabel" class="font-bold text-sky-800 min-w-[220px]"></h4>
+                <button id="moveNextMonthBtn" class="bg-sky-700 hover:bg-sky-800 text-white px-3 py-1.5 rounded-lg text-sm">▶</button>
+              </div>
+              <span class="text-xs text-slate-600">Selecciona día para ver semana y disponibilidad</span>
+            </div>
+            <div class="grid grid-cols-7 gap-2 text-center text-[11px] font-semibold text-slate-500 mb-2">
+              <div>Lun</div><div>Mar</div><div>Mié</div><div>Jue</div><div>Vie</div><div>Sáb</div><div>Dom</div>
+            </div>
+            <div id="moveMonthGrid" class="grid grid-cols-7 gap-2"></div>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+            <div class="flex items-center justify-between gap-2 mb-2">
+              <h4 class="font-bold text-sky-800">Semana del día seleccionado</h4>
+              <span id="moveWeekLabel" class="text-xs bg-sky-100 text-sky-700 px-2 py-1 rounded"></span>
+            </div>
+            <div id="moveWeekDays" class="week-strip"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'agendaDanielMarrero.v1';
+    const ORIGINS = {
+      propio: { label: 'Paciente de Daniel Marrero', daniel: 0.80, clinic: 0.20, doctor: 0 },
+      doctoraA: { label: 'Derivado Clínica Maria Elena Sanchez', daniel: 0.75, clinic: 0.25, doctor: 0 },
+      doctoraB: { label: 'Derivado Clínica ABBA', daniel: 0.20, clinic: 0, doctor: 0.80 }
+    };
+
+    const state = {
+      currentDate: new Date(),
+      selectedDateKey: toDateKey(new Date()),
+      appointments: {},
+      movePickerDate: new Date(),
+      moveTargetDateKey: null,
+      moveContext: null
+    };
+
+    const HOURS = Array.from({ length: 14 }, (_, i) => i + 8);
+
+    function toDateKey(date) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+
+    function parseDateKey(dateKey) {
+      const [y, m, d] = dateKey.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+
+    function money(n) {
+      return new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(n || 0);
+    }
+
+    function splitAmount(amount, origin) {
+      const rule = ORIGINS[origin] || ORIGINS.propio;
+      return {
+        daniel: amount * rule.daniel,
+        clinic: amount * rule.clinic,
+        doctor: amount * rule.doctor
+      };
+    }
+
+    function splitCellHtml(amount, pct) {
+      return `<div>${money(amount)}</div><div class="text-[10px] text-slate-400">${Math.round((pct || 0) * 100)}%</div>`;
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          state.appointments = parsed.appointments || {};
+          if (parsed.selectedDateKey) state.selectedDateKey = parsed.selectedDateKey;
+          if (parsed.currentDate) state.currentDate = new Date(parsed.currentDate);
+        }
+      } catch (e) {
+        console.warn('No se pudo cargar estado:', e.message);
+      }
+    }
+
+    function renderWeeklyOverview() {
+      const selectedDate = parseDateKey(state.selectedDateKey);
+      const monday = getWeekStart(selectedDate);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+
+      const weeklyLabel = document.getElementById('weeklyLabel');
+      weeklyLabel.textContent = `${monday.toLocaleDateString('es-ES')} - ${sunday.toLocaleDateString('es-ES')}`;
+
+      const weeklyGrid = document.getElementById('weeklyGrid');
+      weeklyGrid.innerHTML = '';
+
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(monday);
+        date.setDate(monday.getDate() + i);
+        const dateKey = toDateKey(date);
+        const occupiedHours = getOccupiedHours(dateKey);
+        const freeCount = HOURS.length - occupiedHours.length;
+
+        const card = document.createElement('button');
+        card.className = `week-day-card ${dateKey === state.selectedDateKey ? 'selected' : ''}`;
+        card.innerHTML = `
+          <div class="font-bold text-slate-800">${date.toLocaleDateString('es-ES', { weekday: 'long' })}</div>
+          <div class="text-xs text-slate-500">${date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}</div>
+          <div class="text-[11px] mt-1 text-slate-600">Ocupadas: <strong>${occupiedHours.length}</strong> | Libres: <strong>${freeCount}</strong></div>
+          <div class="mt-2">${HOURS.map(h => {
+            const isOcc = occupiedHours.includes(h);
+            return `<span class="hour-chip ${isOcc ? 'occupied' : 'free'}">${String(h).padStart(2, '0')}</span>`;
+          }).join('')}</div>
+        `;
+        card.onclick = () => {
+          state.selectedDateKey = dateKey;
+          state.currentDate = new Date(date.getFullYear(), date.getMonth(), 1);
+          renderAll();
+          saveState();
+        };
+        weeklyGrid.appendChild(card);
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        appointments: state.appointments,
+        selectedDateKey: state.selectedDateKey,
+        currentDate: state.currentDate.toISOString()
+      }));
+    }
+
+    function getDayData(dateKey) {
+      if (!state.appointments[dateKey]) state.appointments[dateKey] = {};
+      return state.appointments[dateKey];
+    }
+
+    function getDayStats(dateKey) {
+      const day = state.appointments[dateKey] || {};
+      let count = 0;
+      let gross = 0;
+      let daniel = 0;
+      let clinic = 0;
+      let doctor = 0;
+
+      for (const hour of Object.keys(day)) {
+        const slot = day[hour];
+        const amount = Number(slot.amount) || 0;
+        const hasData = (slot.patient || '').trim() || (slot.attentionType || '').trim() || amount > 0;
+        if (!hasData) continue;
+        count += 1;
+        gross += amount;
+        const split = splitAmount(amount, slot.origin);
+        daniel += split.daniel;
+        clinic += split.clinic;
+        doctor += split.doctor;
+      }
+
+      return { count, gross, daniel, clinic, doctor };
+    }
+
+    function getAllStats() {
+      const totals = { count: 0, gross: 0, daniel: 0, clinic: 0, doctor: 0 };
+      for (const dateKey of Object.keys(state.appointments)) {
+        const s = getDayStats(dateKey);
+        totals.count += s.count;
+        totals.gross += s.gross;
+        totals.daniel += s.daniel;
+        totals.clinic += s.clinic;
+        totals.doctor += s.doctor;
+      }
+      return totals;
+    }
+
+    function getWeekStart(date) {
+      const d = new Date(date);
+      const mondayOffset = (d.getDay() + 6) % 7;
+      d.setDate(d.getDate() - mondayOffset);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+
+    function getOccupiedHours(dateKey) {
+      const dayData = state.appointments[dateKey] || {};
+      return HOURS.filter(h => dayData[h] && (dayData[h].patient || '').trim());
+    }
+
+    function renderMonth() {
+      const year = state.currentDate.getFullYear();
+      const month = state.currentDate.getMonth();
+      const monthLabel = document.getElementById('monthLabel');
+      monthLabel.textContent = new Date(year, month, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
+      const grid = document.getElementById('monthGrid');
+      grid.innerHTML = '';
+
+      const firstDaySun = new Date(year, month, 1).getDay();
+      const firstDay = (firstDaySun + 6) % 7;
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'day-cell rounded-xl border border-transparent';
+        grid.appendChild(empty);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const dateKey = toDateKey(date);
+        const stats = getDayStats(dateKey);
+        const isSelected = dateKey === state.selectedDateKey;
+
+        const cell = document.createElement('button');
+        cell.className = `day-cell text-left border rounded-xl p-2 ${isSelected ? 'selected' : 'border-slate-200 bg-white'}`;
+        cell.innerHTML = `
+          <div class="font-bold text-slate-800">${day}</div>
+          <div class="text-[11px] text-slate-500 mt-1">${stats.count} atención(es)</div>
+          <div class="text-[11px] text-sky-700 font-semibold">${money(stats.gross)}</div>
+        `;
+        cell.onclick = () => {
+          state.selectedDateKey = dateKey;
+          renderAll();
+          saveState();
+        };
+
+        grid.appendChild(cell);
+      }
+    }
+
+    function renderAnnual() {
+      const year = state.currentDate.getFullYear();
+      document.getElementById('yearLabel').textContent = `Año ${year}`;
+      const annualGrid = document.getElementById('annualGrid');
+      annualGrid.innerHTML = '';
+
+      for (let month = 0; month < 12; month++) {
+        const first = new Date(year, month, 1);
+        const days = new Date(year, month + 1, 0).getDate();
+        let monthGross = 0;
+        let monthCount = 0;
+
+        for (let d = 1; d <= days; d++) {
+          const key = toDateKey(new Date(year, month, d));
+          const s = getDayStats(key);
+          monthGross += s.gross;
+          monthCount += s.count;
+        }
+
+        const card = document.createElement('button');
+        card.className = 'text-left border border-slate-200 rounded-xl p-3 bg-white hover:border-sky-400 hover:bg-sky-50 transition';
+        card.innerHTML = `
+          <div class="font-semibold text-slate-700">${first.toLocaleDateString('es-ES', { month: 'long' })}</div>
+          <div class="text-xs text-slate-500 mt-1">${monthCount} atención(es)</div>
+          <div class="text-sm text-sky-700 font-bold">${money(monthGross)}</div>
+        `;
+        card.onclick = () => {
+          state.currentDate = new Date(year, month, 1);
+          renderAll();
+          saveState();
+        };
+        annualGrid.appendChild(card);
+      }
+    }
+
+    function renderSchedule() {
+      const selectedDate = parseDateKey(state.selectedDateKey);
+      document.getElementById('selectedDayLabel').textContent = selectedDate.toLocaleDateString('es-ES', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      });
+
+      const dayData = getDayData(state.selectedDateKey);
+      const tbody = document.getElementById('scheduleBody');
+      tbody.innerHTML = '';
+
+      for (const hour of HOURS) {
+        const slot = dayData[hour] || { patient: '', attentionType: '', amount: '', origin: 'propio' };
+        const amount = Number(slot.amount) || 0;
+        const split = splitAmount(amount, slot.origin);
+        const rule = ORIGINS[slot.origin] || ORIGINS.propio;
+        const isOccupied = (slot.patient || '').trim().length > 0;
+
+        const redCls = isOccupied ? 'slot-col-red' : '';
+        const hasPaid = amount > 0;
+        const yellowCls = hasPaid ? 'slot-col-yellow' : '';
+
+        const tr = document.createElement('tr');
+        tr.className = 'border-b border-slate-100';
+        tr.innerHTML = `
+          <td class="p-2 align-top font-semibold text-slate-700 ${redCls}">${String(hour).padStart(2, '0')}:00</td>
+          <td class="p-2 ${redCls}" data-col="patient"><input class="slot-input" data-hour="${hour}" data-field="patient" value="${slot.patient || ''}" placeholder="Nombre del paciente"></td>
+          <td class="p-2" data-col="gestion">
+            <select class="slot-input" data-action="slot-manage" data-hour="${hour}">
+              <option value="">Gestionar...</option>
+              <option value="MODIFICA HORA">MODIFICA HORA</option>
+              <option value="ANULA HORA">ANULA HORA</option>
+            </select>
+          </td>
+          <td class="p-2" data-col="tipo"><input class="slot-input" data-hour="${hour}" data-field="attentionType" value="${slot.attentionType || ''}" placeholder="Tipo de atención"></td>
+          <td class="p-2 ${yellowCls}" data-col="origin">
+            <select class="slot-input" data-hour="${hour}" data-field="origin">
+              <option value="propio" ${slot.origin === 'propio' ? 'selected' : ''}>Paciente de Daniel Marrero</option>
+              <option value="doctoraA" ${slot.origin === 'doctoraA' ? 'selected' : ''}>Clínica Maria Elena Sanchez</option>
+              <option value="doctoraB" ${slot.origin === 'doctoraB' ? 'selected' : ''}>Clínica ABBA</option>
+            </select>
+          </td>
+          <td class="p-2 ${yellowCls}" data-col="monto"><input type="number" min="0" class="slot-input" data-hour="${hour}" data-field="amount" value="${slot.amount || ''}" placeholder="Monto"></td>
+          <td class="p-2 font-semibold text-emerald-700 ${yellowCls}" data-split="daniel">${splitCellHtml(split.daniel, rule.daniel)}</td>
+          <td class="p-2 font-semibold text-indigo-700 ${yellowCls}" data-split="clinic">${splitCellHtml(split.clinic, rule.clinic)}</td>
+          <td class="p-2 font-semibold text-fuchsia-700 ${yellowCls}" data-split="doctor">${splitCellHtml(split.doctor, rule.doctor)}</td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      tbody.querySelectorAll('input, select').forEach(el => {
+        el.addEventListener('input', handleSlotChange);
+        el.addEventListener('change', handleSlotChange);
+      });
+      tbody.querySelectorAll('[data-action="slot-manage"]').forEach(combo => {
+        combo.addEventListener('change', handleSlotManage);
+      });
+
+      renderDayTotals();
+    }
+
+    function handleSlotManage(event) {
+      const selectEl = event.target;
+      const hour = Number(selectEl.dataset.hour);
+      if (!Number.isFinite(hour)) return;
+
+      const dayData = getDayData(state.selectedDateKey);
+      const slot = dayData[hour] || { patient: '', attentionType: '', amount: '', origin: 'propio' };
+      const patientName = (slot.patient || '').trim();
+
+      if (!patientName) {
+        alert('No hay paciente agendado en este bloque horario.');
+        selectEl.value = '';
+        return;
+      }
+
+      const normalized = (selectEl.value || '').trim().toUpperCase();
+      if (!normalized) return;
+
+      if (normalized === 'ANULA HORA') {
+        if (!confirm(`¿Confirmas anular la hora de ${patientName} a las ${String(hour).padStart(2, '0')}:00?`)) {
+          selectEl.value = '';
+          return;
+        }
+        clearSlot(state.selectedDateKey, hour);
+        saveState();
+        renderAll();
+        selectEl.value = '';
+        return;
+      }
+
+      if (normalized !== 'MODIFICA HORA') {
+        alert('Opción no válida. Usa MODIFICA HORA o ANULA HORA.');
+        selectEl.value = '';
+        return;
+      }
+      openMoveModal({ sourceDateKey: state.selectedDateKey, sourceHour: hour, slot: { ...slot } });
+      selectEl.value = '';
+    }
+
+    function clearSlot(dateKey, hour) {
+      const dayData = getDayData(dateKey);
+      dayData[hour] = { patient: '', attentionType: '', amount: '', origin: 'propio' };
+    }
+
+    function openMoveModal(context) {
+      state.moveContext = context;
+      state.movePickerDate = parseDateKey(context.sourceDateKey);
+      state.moveTargetDateKey = context.sourceDateKey;
+
+      const sourceDate = parseDateKey(context.sourceDateKey);
+      const info = document.getElementById('moveSourceInfo');
+      info.textContent = `Paciente: ${context.slot.patient} | Hora actual: ${String(context.sourceHour).padStart(2, '0')}:00 | ${sourceDate.toLocaleDateString('es-ES')}`;
+
+      renderMoveMonth();
+      renderMoveWeek();
+      document.getElementById('moveModal').classList.remove('hidden');
+    }
+
+    function closeMoveModal() {
+      state.moveContext = null;
+      document.getElementById('moveModal').classList.add('hidden');
+    }
+
+    function renderMoveMonth() {
+      const year = state.movePickerDate.getFullYear();
+      const month = state.movePickerDate.getMonth();
+      document.getElementById('moveMonthLabel').textContent = new Date(year, month, 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+
+      const grid = document.getElementById('moveMonthGrid');
+      grid.innerHTML = '';
+
+      const firstDaySun = new Date(year, month, 1).getDay();
+      const firstDay = (firstDaySun + 6) % 7;
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement('div');
+        grid.appendChild(empty);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const dateKey = toDateKey(date);
+        const occ = getOccupiedHours(dateKey).length;
+        const selected = dateKey === state.moveTargetDateKey;
+        const btn = document.createElement('button');
+        btn.className = `move-day-cell ${selected ? 'selected' : ''}`;
+        btn.innerHTML = `<div class="font-bold">${day}</div><div class="text-[11px] text-slate-500">${occ} ocupadas</div>`;
+        btn.onclick = () => {
+          state.moveTargetDateKey = dateKey;
+          renderMoveMonth();
+          renderMoveWeek();
+        };
+        grid.appendChild(btn);
+      }
+    }
+
+    function renderMoveWeek() {
+      if (!state.moveTargetDateKey) return;
+      const date = parseDateKey(state.moveTargetDateKey);
+      const monday = getWeekStart(date);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+
+      document.getElementById('moveWeekLabel').textContent = `${monday.toLocaleDateString('es-ES')} - ${sunday.toLocaleDateString('es-ES')}`;
+      const wrap = document.getElementById('moveWeekDays');
+      wrap.innerHTML = '';
+
+      for (let i = 0; i < 7; i++) {
+        const day = new Date(monday);
+        day.setDate(monday.getDate() + i);
+        const dateKey = toDateKey(day);
+        const dayData = state.appointments[dateKey] || {};
+        const dayCard = document.createElement('div');
+        dayCard.className = `week-day-card ${dateKey === state.moveTargetDateKey ? 'selected' : ''}`;
+
+        let hoursHtml = '';
+        for (const h of HOURS) {
+          const row = dayData[h];
+          const occupied = row && (row.patient || '').trim().length > 0;
+          const sourceSame = state.moveContext && state.moveContext.sourceDateKey === dateKey && state.moveContext.sourceHour === h;
+          const cls = occupied && !sourceSame ? 'occupied' : 'free';
+          const label = `${String(h).padStart(2, '0')}:00`;
+          hoursHtml += `<button class="move-hour-btn ${cls}" data-move-date="${dateKey}" data-move-hour="${h}">${label}</button>`;
+        }
+
+        dayCard.innerHTML = `
+          <div class="font-bold text-sm">${day.toLocaleDateString('es-ES', { weekday: 'long' })}</div>
+          <div class="text-xs text-slate-500 mb-2">${day.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}</div>
+          <div class="grid grid-cols-2 gap-1">${hoursHtml}</div>
+        `;
+        wrap.appendChild(dayCard);
+      }
+
+      wrap.querySelectorAll('[data-move-date]').forEach(btn => {
+        btn.addEventListener('click', handleMoveHourSelection);
+      });
+    }
+
+    function handleMoveHourSelection(event) {
+      if (!state.moveContext) return;
+
+      const targetDateKey = event.target.dataset.moveDate;
+      const targetHour = Number(event.target.dataset.moveHour);
+      if (!targetDateKey || !HOURS.includes(targetHour)) return;
+
+      const targetDayData = getDayData(targetDateKey);
+      const existingTarget = targetDayData[targetHour] || { patient: '', attentionType: '', amount: '', origin: 'propio' };
+      const sourceSame = state.moveContext.sourceDateKey === targetDateKey && state.moveContext.sourceHour === targetHour;
+      const targetHasPatient = (existingTarget.patient || '').trim().length > 0;
+
+      if (targetHasPatient && !sourceSame) {
+        const overwrite = confirm(`La hora ${String(targetHour).padStart(2, '0')}:00 ya está ocupada por ${existingTarget.patient}. ¿Deseas reemplazarla?`);
+        if (!overwrite) return;
+      }
+
+      targetDayData[targetHour] = { ...state.moveContext.slot };
+      if (!sourceSame) clearSlot(state.moveContext.sourceDateKey, state.moveContext.sourceHour);
+
+      const targetDate = parseDateKey(targetDateKey);
+      state.selectedDateKey = targetDateKey;
+      state.currentDate = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
+
+      saveState();
+      closeMoveModal();
+      renderAll();
+    }
+
+    function handleSlotChange(event) {
+      const hour = event.target.dataset.hour;
+      const field = event.target.dataset.field;
+      if (!hour || !field) return;
+
+      const dayData = getDayData(state.selectedDateKey);
+      if (!dayData[hour]) dayData[hour] = { patient: '', attentionType: '', amount: '', origin: 'propio' };
+      dayData[hour][field] = event.target.value;
+
+      saveState();
+      updateSlotSplitRow(event.target, dayData[hour]);
+      renderDayTotals();
+      renderMonth();
+      renderWeeklyOverview();
+      renderAnnual();
+      renderAllTimeTotals();
+    }
+
+    function updateSlotSplitRow(inputEl, slot) {
+      const row = inputEl.closest('tr');
+      if (!row) return;
+
+      const amount = Number(slot.amount) || 0;
+      const split = splitAmount(amount, slot.origin);
+      const rule = ORIGINS[slot.origin] || ORIGINS.propio;
+
+      const danielCell = row.querySelector('[data-split="daniel"]');
+      const clinicCell = row.querySelector('[data-split="clinic"]');
+      const doctorCell = row.querySelector('[data-split="doctor"]');
+
+      if (danielCell) danielCell.innerHTML = splitCellHtml(split.daniel, rule.daniel);
+      if (clinicCell) clinicCell.innerHTML = splitCellHtml(split.clinic, rule.clinic);
+      if (doctorCell) doctorCell.innerHTML = splitCellHtml(split.doctor, rule.doctor);
+
+      updateSlotOccupancyRow(row, slot);
+    }
+
+    function updateSlotOccupancyRow(row, slot) {
+      const isOccupied = (slot.patient || '').trim().length > 0;
+      const hasPaid = (Number(slot.amount) || 0) > 0;
+
+      const hourTd = row.children[0];
+      const patientTd = row.querySelector('[data-col="patient"]');
+      if (hourTd) hourTd.classList.toggle('slot-col-red', isOccupied);
+      if (patientTd) patientTd.classList.toggle('slot-col-red', isOccupied);
+
+      row.querySelectorAll('[data-col="origin"], [data-col="monto"], [data-split]').forEach(td => {
+        td.classList.toggle('slot-col-yellow', hasPaid);
+      });
+    }
+
+    function renderDayTotals() {
+      const s = getDayStats(state.selectedDateKey);
+      document.getElementById('dayGross').textContent = money(s.gross);
+      document.getElementById('dayDaniel').textContent = money(s.daniel);
+      document.getElementById('dayClinic').textContent = money(s.clinic);
+      document.getElementById('dayDoctors').textContent = money(s.doctor);
+    }
+
+    function renderAllTimeTotals() {
+      const s = getAllStats();
+      document.getElementById('allCount').textContent = s.count;
+      document.getElementById('allGross').textContent = money(s.gross);
+      document.getElementById('allDaniel').textContent = money(s.daniel);
+      document.getElementById('allClinic').textContent = money(s.clinic);
+      document.getElementById('allDoctors').textContent = money(s.doctor);
+    }
+
+    function bindNav() {
+      document.getElementById('prevMonthBtn').onclick = () => {
+        state.currentDate.setMonth(state.currentDate.getMonth() - 1);
+        renderAll();
+        saveState();
+      };
+      document.getElementById('nextMonthBtn').onclick = () => {
+        state.currentDate.setMonth(state.currentDate.getMonth() + 1);
+        renderAll();
+        saveState();
+      };
+      document.getElementById('todayBtn').onclick = () => {
+        const now = new Date();
+        state.currentDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        state.selectedDateKey = toDateKey(now);
+        renderAll();
+        saveState();
+      };
+
+      document.getElementById('closeMoveModalBtn').onclick = closeMoveModal;
+      document.getElementById('movePrevMonthBtn').onclick = () => {
+        state.movePickerDate.setMonth(state.movePickerDate.getMonth() - 1);
+        renderMoveMonth();
+      };
+      document.getElementById('moveNextMonthBtn').onclick = () => {
+        state.movePickerDate.setMonth(state.movePickerDate.getMonth() + 1);
+        renderMoveMonth();
+      };
+      document.getElementById('moveModal').addEventListener('click', (e) => {
+        if (e.target.id === 'moveModal') closeMoveModal();
+      });
+    }
+
+    function renderAll() {
+      renderMonth();
+      renderWeeklyOverview();
+      renderAnnual();
+      renderSchedule();
+      renderAllTimeTotals();
+    }
+
+    loadState();
+    bindNav();
+    renderAll();
+  </script>
+</body>
+</html>
