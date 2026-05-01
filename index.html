@@ -13,18 +13,40 @@
     *{box-sizing:border-box;margin:0;padding:0;}
     body{font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;color:#0f172a;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
 
-    /* NAV */
+    /* ── LOGIN SCREEN ── */
+    #loginScreen{position:fixed;inset:0;background:linear-gradient(140deg,#1a56b0 0%,#1e3a8a 60%,#0f2563 100%);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;}
+    .login-card{background:#fff;border-radius:20px;width:min(400px,100%);box-shadow:0 30px 80px rgba(0,0,0,.4);overflow:hidden;}
+    .login-brand{background:linear-gradient(135deg,#1a56b0,#1e3a8a);padding:30px 24px 22px;text-align:center;}
+    #loginBrandLogo{height:80px;border-radius:12px;object-fit:contain;display:none;margin:0 auto 12px;background:#fff;padding:6px;}
+    #loginBrandName{color:#fff;font-weight:800;font-size:21px;letter-spacing:.2px;}
+    #loginBrandSub{color:rgba(255,255,255,.65);font-size:12px;margin-top:5px;}
+    .login-tabs{display:flex;border-bottom:2px solid #f1f5f9;}
+    .login-tab{flex:1;padding:11px 8px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;color:#94a3b8;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s;}
+    .login-tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+    .login-body{padding:24px;}
+    .login-err{background:#fee2e2;color:#dc2626;border-radius:8px;padding:9px 13px;font-size:12px;font-weight:600;margin-bottom:14px;display:none;}
+    .btn-login{width:100%;background:var(--blue);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:700;font-size:14px;cursor:pointer;margin-top:6px;transition:background .12s;letter-spacing:.2px;}
+    .btn-login:hover{background:var(--blue2);}
+    .login-footer{text-align:center;padding:10px 0 18px;font-size:11px;color:#94a3b8;}
+
+    /* ── NAV ── */
     #topNav{background:var(--blue);color:#fff;height:54px;display:flex;align-items:center;padding:0 16px;gap:0;flex-shrink:0;box-shadow:0 2px 8px rgba(0,0,0,.25);}
-    #topNav .logo{font-weight:800;font-size:15px;letter-spacing:.3px;margin-right:20px;white-space:nowrap;}
     .nav-tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 14px;cursor:pointer;border-radius:6px;transition:background .12s;font-size:11px;font-weight:600;color:rgba(255,255,255,.75);}
     .nav-tab i{font-size:18px;}
     .nav-tab:hover{background:rgba(255,255,255,.12);color:#fff;}
     .nav-tab.active{background:rgba(255,255,255,.2);color:#fff;}
     #topNav .sp{flex:1;}
-    #userBadge{font-size:11px;color:rgba(255,255,255,.8);background:rgba(255,255,255,.15);border-radius:6px;padding:4px 10px;display:flex;align-items:center;gap:5px;}
+    #userBadge{font-size:11px;color:rgba(255,255,255,.85);background:rgba(255,255,255,.15);border-radius:7px;padding:4px 10px;display:flex;align-items:center;gap:6px;margin-left:8px;}
+    #userBadge .role-tag{font-size:9px;font-weight:700;background:rgba(255,255,255,.25);border-radius:4px;padding:1px 5px;text-transform:uppercase;letter-spacing:.4px;}
+    #userBadge .role-tag.admin{background:#fbbf24;color:#78350f;}
     #syncDot{width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block;}
+    #navBrand{display:flex;align-items:center;gap:8px;margin-right:20px;}
+    #navLogo{height:32px;border-radius:5px;display:none;object-fit:contain;}
+    #navName{font-weight:800;font-size:15px;letter-spacing:.3px;white-space:nowrap;}
+    .nav-icon-btn{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:15px;line-height:1;transition:background .12s;}
+    .nav-icon-btn:hover{background:rgba(255,255,255,.28);}
 
-    /* TOOLBAR */
+    /* ── TOOLBAR ── */
     #toolbar{height:46px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;padding:0 14px;gap:8px;flex-shrink:0;}
     .tb-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid #cbd5e1;background:#fff;color:#374151;transition:all .12s;}
     .tb-btn:hover{background:#f1f5f9;border-color:#94a3b8;}
@@ -32,7 +54,7 @@
     #dateLabel{font-weight:700;font-size:13px;min-width:110px;text-align:center;}
     #profBadge{font-size:12px;font-weight:700;color:var(--blue);background:var(--blue-lt);border:1px solid #bfdbfe;border-radius:6px;padding:4px 12px;}
 
-    /* CALENDAR */
+    /* ── CALENDAR ── */
     #calWrap{flex:1;overflow:auto;}
     .cal-table{border-collapse:collapse;width:100%;min-width:700px;}
     .cal-table th,.cal-table td{border:1px solid #e2e8f0;}
@@ -53,7 +75,7 @@
     .slot-name{font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .slot-type{font-size:10px;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
-    /* APPOINTMENT MODAL */
+    /* ── MODAL BASE ── */
     .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:60;display:flex;align-items:center;justify-content:center;padding:12px;}
     .modal-box{background:#fff;border-radius:14px;width:min(460px,100%);box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;}
     .modal-hd{background:var(--blue);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;}
@@ -77,8 +99,10 @@
     .btn-del{background:#fee2e2;color:#dc2626;border:none;border-radius:8px;padding:8px 14px;font-weight:700;font-size:12px;cursor:pointer;}
     .btn-del:hover{background:#fecaca;}
     .btn-cancel{background:#f1f5f9;color:#64748b;border:none;border-radius:8px;padding:8px 14px;font-weight:600;font-size:12px;cursor:pointer;}
+    .btn-outline{background:#fff;color:var(--blue);border:1.5px solid var(--blue);border-radius:8px;padding:7px 14px;font-weight:600;font-size:12px;cursor:pointer;transition:all .12s;}
+    .btn-outline:hover{background:var(--blue-lt);}
 
-    /* AUTOCOMPLETE DROPDOWN */
+    /* ── AUTOCOMPLETE ── */
     #acDrop{position:absolute;background:#fff;border:1px solid #e2e8f0;border-radius:9px;box-shadow:0 8px 30px rgba(0,0,0,.15);z-index:9999;max-height:240px;overflow-y:auto;width:100%;}
     .ac-item{padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f5f9;transition:background .1s;}
     .ac-item:last-child{border-bottom:none;}
@@ -87,46 +111,103 @@
     .ac-meta{font-size:11px;color:#64748b;margin-top:1px;}
     .ac-new{color:var(--blue);font-weight:600;font-size:12px;display:flex;align-items:center;gap:5px;}
 
-    /* PATIENTS VIEW */
+    /* ── PATIENTS VIEW ── */
     #viewPacientes .pat-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px;cursor:pointer;transition:box-shadow .12s;}
     #viewPacientes .pat-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);border-color:#93c5fd;}
 
-    /* FINANCES VIEW */
+    /* ── FINANCES VIEW ── */
     .stat-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;}
     .stat-val{font-size:24px;font-weight:800;color:var(--blue);}
     .stat-lbl{font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase;}
 
-    /* SETUP BANNER */
+    /* ── SETUP BANNER ── */
     #setupBanner{background:#fef9c3;border-bottom:1px solid #fbbf24;padding:6px 14px;font-size:11px;color:#92400e;text-align:center;flex-shrink:0;}
 
-    /* SCROLLBAR */
+    /* ── SCROLLBAR ── */
     ::-webkit-scrollbar{width:6px;height:6px}
     ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
 
-    /* Spinner */
+    /* ── SPINNER ── */
     @keyframes spin{to{transform:rotate(360deg)}}
     .spin{animation:spin .7s linear infinite;display:inline-block;width:16px;height:16px;border:2px solid #bfdbfe;border-top-color:var(--blue);border-radius:50%;}
 
-    /* CONFIG MODAL */
-    #cfgModal .modal-box{max-width:420px;}
-    #logoPreview{width:100%;max-height:120px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:none;margin-top:6px;}
-    #logoPlaceholder{border:2px dashed #cbd5e1;border-radius:8px;padding:24px;text-align:center;color:#94a3b8;font-size:13px;cursor:pointer;transition:border-color .12s;}
-    #logoPlaceholder:hover{border-color:var(--blue);color:var(--blue);}
-    .cfg-gear{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:16px;line-height:1;transition:background .12s;}
-    .cfg-gear:hover{background:rgba(255,255,255,.28);}
-    #navBrand{display:flex;align-items:center;gap:8px;margin-right:20px;}
-    #userBadge{margin-left:8px;}
-    .cfg-hint{font-size:11px;color:#94a3b8;margin-top:2px;}
+    /* ── CONFIG MODAL ── */
+    #cfgModal .modal-box{max-width:460px;max-height:90vh;overflow-y:auto;}
+    .cfg-tabs{display:flex;border-bottom:2px solid #f1f5f9;background:#f8fafc;}
+    .cfg-tab{flex:1;padding:10px 8px;text-align:center;font-size:12px;font-weight:700;cursor:pointer;color:#94a3b8;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .14s;}
+    .cfg-tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+    .cfg-section{padding:18px;display:flex;flex-direction:column;gap:14px;}
+    #logoPreview{width:100%;max-height:200px;object-fit:contain;border-radius:10px;border:1px solid #e2e8f0;background:#f8fafc;display:none;margin-top:8px;}
+    #logoPlaceholder{border:2px dashed #cbd5e1;border-radius:10px;padding:40px 24px;text-align:center;color:#94a3b8;font-size:14px;cursor:pointer;transition:all .12s;display:flex;flex-direction:column;align-items:center;gap:8px;}
+    #logoPlaceholder .logo-icon{font-size:40px;line-height:1;}
+    #logoPlaceholder:hover{border-color:var(--blue);color:var(--blue);background:#f0f7ff;}
     #logoFileInput{display:none;}
-    .cfg-logo-remove{margin-top:6px;font-size:11px;padding:5px 10px;}
-    #cfgPreviewBrand{background:#1a56b0;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;}
-    #cfgPreviewLogo{height:36px;border-radius:5px;display:none;object-fit:contain;}
-    #cfgPreviewName{color:#fff;font-weight:800;font-size:15px;}
-    #navLogo{height:32px;border-radius:5px;display:none;object-fit:contain;}
-    #navName{font-weight:800;font-size:15px;letter-spacing:.3px;white-space:nowrap;}
+    .cfg-hint{font-size:11px;color:#94a3b8;margin-top:2px;}
+    .cfg-logo-remove{font-size:11px;padding:5px 10px;margin-top:6px;}
+    #cfgPreviewBrand{background:linear-gradient(135deg,#1a56b0,#1e3a8a);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:10px;}
+    #cfgPreviewLogo{height:40px;border-radius:6px;display:none;object-fit:contain;background:#fff;padding:3px;}
+    #cfgPreviewName{color:#fff;font-weight:800;font-size:16px;}
+
+    /* ── USER MANAGEMENT ── */
+    .user-row{display:flex;align-items:center;gap:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:10px 12px;}
+    .user-row-name{flex:1;font-weight:700;font-size:13px;color:#0f172a;}
+    .user-row-pin{font-size:11px;color:#64748b;font-family:monospace;background:#e2e8f0;border-radius:4px;padding:2px 6px;}
+    .user-row-del{background:none;border:none;cursor:pointer;color:#dc2626;font-size:16px;padding:2px 6px;border-radius:5px;transition:background .1s;}
+    .user-row-del:hover{background:#fee2e2;}
+    .add-user-form{display:flex;gap:8px;align-items:flex-end;}
+    .add-user-form .fi{margin:0;}
+    .section-divider{border:none;border-top:1px solid #e2e8f0;margin:4px 0;}
+    .danger-zone{background:#fff5f5;border:1px solid #fecaca;border-radius:9px;padding:14px;}
+    .danger-zone h4{font-size:12px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;}
   </style>
 </head>
 <body>
+
+<!-- ══ LOGIN SCREEN ══ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <img id="loginBrandLogo" src="" alt="logo">
+      <div id="loginBrandName">Daniel Marrero Cosmetólogo</div>
+      <div id="loginBrandSub">Sistema de Agenda Clínica</div>
+    </div>
+    <div class="login-tabs">
+      <div class="login-tab active" id="ltAdmin" onclick="switchLoginTab('admin')">🔐 Administrador</div>
+      <div class="login-tab" id="ltUser" onclick="switchLoginTab('user')">👤 Colaborador</div>
+    </div>
+    <div class="login-body">
+      <!-- Admin panel -->
+      <div id="loginPanelAdmin">
+        <div class="login-err" id="adminErr"></div>
+        <div class="field-group" style="margin-bottom:10px">
+          <label>Usuario</label>
+          <input id="loginAdminUser" class="fi" type="text" placeholder="Usuario administrador" autocomplete="username">
+        </div>
+        <div class="field-group" style="margin-bottom:14px">
+          <label>Contraseña</label>
+          <input id="loginAdminPass" class="fi" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter') doAdminLogin()">
+        </div>
+        <button type="button" class="btn-login" onclick="doAdminLogin()">Ingresar como Administrador</button>
+      </div>
+      <!-- User panel -->
+      <div id="loginPanelUser" class="hidden">
+        <div class="login-err" id="userErr"></div>
+        <div class="field-group" style="margin-bottom:10px">
+          <label>Selecciona tu nombre</label>
+          <select id="loginUserName" class="fi">
+            <option value="">— Selecciona —</option>
+          </select>
+        </div>
+        <div class="field-group" style="margin-bottom:14px">
+          <label>PIN (4 dígitos)</label>
+          <input id="loginUserPin" class="fi" type="password" inputmode="numeric" maxlength="4" placeholder="••••" onkeydown="if(event.key==='Enter') doUserLogin()">
+        </div>
+        <button type="button" class="btn-login" onclick="doUserLogin()">Ingresar como Colaborador</button>
+      </div>
+    </div>
+    <div class="login-footer">Acceso seguro · Solo personal autorizado</div>
+  </div>
+</div>
 
 <!-- SETUP BANNER -->
 <div id="setupBanner" class="hidden">
@@ -153,19 +234,21 @@
     Finanzas
   </div>
   <div class="sp"></div>
-  <button type="button" class="cfg-gear" onclick="openCfgModal()" title="Configurar clínica">⚙️</button>
+  <button type="button" id="cfgBtn" class="nav-icon-btn" onclick="openCfgModal()" title="Configuración">⚙️</button>
   <div id="userBadge">
     <span id="syncDot"></span>
-    <span id="userDisplay">Daniel Marrero</span>
+    <span id="userDisplay">—</span>
+    <span id="roleBadge" class="role-tag admin">Admin</span>
+    <button type="button" class="nav-icon-btn" onclick="doLogout()" title="Cerrar sesión" style="padding:3px 7px;font-size:13px;">↩</button>
   </div>
 </nav>
 
 <!-- TOOLBAR (only for agenda) -->
 <div id="toolbar">
-  <button class="tb-btn" onclick="prevWeek()">&#8592;</button>
+  <button type="button" class="tb-btn" onclick="prevWeek()">&#8592;</button>
   <span id="dateLabel"></span>
-  <button class="tb-btn" onclick="nextWeek()">&#8594;</button>
-  <button class="tb-btn" onclick="goToday()" style="margin-left:4px">Hoy</button>
+  <button type="button" class="tb-btn" onclick="nextWeek()">&#8594;</button>
+  <button type="button" class="tb-btn" onclick="goToday()">Hoy</button>
   <div style="flex:1"></div>
   <span id="profBadge">Daniel Marrero · Cosmetólogo</span>
 </div>
@@ -195,17 +278,15 @@
   <div class="modal-box">
     <div class="modal-hd">
       <h3 id="apptModalTitle">Nueva cita</h3>
-      <button onclick="closeApptModal()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:16px;">✕</button>
+      <button type="button" onclick="closeApptModal()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:16px;">✕</button>
     </div>
     <div class="modal-body">
-      <!-- Patient autocomplete -->
       <div class="field-group" style="position:relative">
         <label>Paciente</label>
         <input id="apptPatient" class="fi" type="text" placeholder="Escriba el nombre del paciente..."
           oninput="onPatientInput()" onkeydown="onPatientKeydown(event)" autocomplete="off">
         <div id="acDrop" class="hidden"></div>
       </div>
-      <!-- Status -->
       <div class="field-group">
         <label>Estado</label>
         <div class="status-pills">
@@ -215,7 +296,6 @@
           <div class="st-pill" data-st="rescheduled" onclick="selectStatus('rescheduled')">🔄 Reprogramado</div>
         </div>
       </div>
-      <!-- Type + origin in row -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="field-group">
           <label>Tipo de atención</label>
@@ -230,27 +310,24 @@
           </select>
         </div>
       </div>
-      <!-- Amount -->
       <div class="field-group">
         <label>Monto ($)</label>
         <input id="apptAmount" class="fi" type="number" min="0" placeholder="0" oninput="updateSplitPreview()">
       </div>
-      <!-- Split preview -->
       <div id="splitPreview" class="hidden" style="background:#f8fafc;border-radius:8px;padding:10px;font-size:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;">
         <div><div style="color:#64748b">Daniel</div><strong id="spDaniel" style="color:#1d4ed8">$0</strong></div>
         <div><div style="color:#64748b">Clínica MES</div><strong id="spClinic" style="color:#7c3aed">$0</strong></div>
         <div><div style="color:#64748b">ABBA</div><strong id="spAbba" style="color:#be185d">$0</strong></div>
       </div>
-      <!-- Notes -->
       <div class="field-group">
         <label>Notas (opcional)</label>
         <textarea id="apptNotes" class="fi" rows="2" placeholder="Observaciones..." style="resize:vertical"></textarea>
       </div>
     </div>
     <div class="modal-ft">
-      <button class="btn-del hidden" id="apptDelBtn" onclick="deleteAppt()">🗑 Eliminar</button>
-      <button class="btn-cancel" onclick="closeApptModal()">Cancelar</button>
-      <button class="btn-save" onclick="saveAppt()">Guardar cita</button>
+      <button type="button" class="btn-del hidden" id="apptDelBtn" onclick="deleteAppt()">🗑 Eliminar</button>
+      <button type="button" class="btn-cancel" onclick="closeApptModal()">Cancelar</button>
+      <button type="button" class="btn-save" onclick="saveAppt()">Guardar cita</button>
     </div>
   </div>
 </div>
@@ -259,32 +336,78 @@
 <div id="cfgModal" class="modal-bg hidden">
   <div class="modal-box">
     <div class="modal-hd">
-      <h3>Configuración de clínica</h3>
+      <h3>Configuración</h3>
       <button type="button" onclick="closeCfgModal()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:16px;">✕</button>
     </div>
-    <div class="modal-body">
+    <!-- Tabs -->
+    <div class="cfg-tabs">
+      <div class="cfg-tab active" id="cfgTabClinica" onclick="switchCfgTab('clinica')">🏥 Clínica</div>
+      <div class="cfg-tab" id="cfgTabUsuarios" onclick="switchCfgTab('usuarios')">👥 Usuarios</div>
+    </div>
+    <!-- Tab: Clínica -->
+    <div id="cfgSectionClinica" class="cfg-section">
       <div class="field-group">
         <label>Nombre de la clínica / profesional</label>
         <input id="cfgName" class="fi" type="text" placeholder="Ej: Cosmetología Daniel Marrero">
-        <span class="cfg-hint">Aparecerá en el encabezado, presupuestos, recetas y correos.</span>
+        <span class="cfg-hint">Aparece en el encabezado, presupuestos, recetas y correos.</span>
       </div>
       <div class="field-group">
         <label>Logo</label>
         <div id="logoPlaceholder" onclick="document.getElementById('logoFileInput').click()">
-          📷 Haz clic para subir logo (PNG, JPG, SVG)
+          <span class="logo-icon">🖼️</span>
+          <span>Haz clic para subir tu logo</span>
+          <span style="font-size:11px">PNG, JPG o SVG — recomendado 400×200 px</span>
         </div>
         <input id="logoFileInput" type="file" accept="image/*" onchange="handleLogoUpload(event)">
-        <img id="logoPreview" src="" alt="preview logo">
+        <img id="logoPreview" src="" alt="Logo de la clínica">
         <button type="button" id="logoRemoveBtn" class="btn-del cfg-logo-remove hidden" onclick="removeLogo()">✕ Quitar logo</button>
       </div>
       <div id="cfgPreviewBrand" class="hidden">
         <img id="cfgPreviewLogo" src="" alt="">
         <span id="cfgPreviewName"></span>
       </div>
+      <div class="modal-ft" style="padding:0;border:none;">
+        <button type="button" class="btn-cancel" onclick="closeCfgModal()">Cancelar</button>
+        <button type="button" class="btn-save" onclick="saveCfg()">Guardar</button>
+      </div>
     </div>
-    <div class="modal-ft">
-      <button type="button" class="btn-cancel" onclick="closeCfgModal()">Cancelar</button>
-      <button type="button" class="btn-save" onclick="saveCfg()">Guardar configuración</button>
+    <!-- Tab: Usuarios -->
+    <div id="cfgSectionUsuarios" class="cfg-section hidden">
+      <!-- Change admin password -->
+      <div class="danger-zone">
+        <h4>🔐 Contraseña de administrador</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+          <div class="field-group">
+            <label>Nueva contraseña</label>
+            <input id="newAdminPass" class="fi fi-sm" type="password" placeholder="Mínimo 4 caracteres">
+          </div>
+          <div class="field-group">
+            <label>Confirmar</label>
+            <input id="newAdminPassConf" class="fi fi-sm" type="password" placeholder="Repite la contraseña">
+          </div>
+        </div>
+        <div id="passChangeErr" style="font-size:11px;color:#dc2626;margin-bottom:6px;display:none;"></div>
+        <button type="button" class="btn-outline" onclick="changeAdminPass()">Cambiar contraseña</button>
+      </div>
+      <hr class="section-divider">
+      <!-- Users list -->
+      <div>
+        <div style="font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;">Colaboradores</div>
+        <div id="usersList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;"></div>
+        <!-- Add user form -->
+        <div style="font-size:11px;font-weight:700;color:#64748b;margin-bottom:6px;">Agregar colaborador</div>
+        <div class="add-user-form">
+          <div class="field-group" style="flex:1">
+            <input id="newUserName" class="fi fi-sm" type="text" placeholder="Nombre completo">
+          </div>
+          <div class="field-group" style="width:90px">
+            <input id="newUserPin" class="fi fi-sm" type="password" inputmode="numeric" maxlength="4" placeholder="PIN">
+          </div>
+          <button type="button" class="btn-save" style="padding:7px 14px;font-size:12px;" onclick="addUser()">+ Agregar</button>
+        </div>
+        <div id="addUserErr" style="font-size:11px;color:#dc2626;margin-top:6px;display:none;"></div>
+        <span class="cfg-hint" style="margin-top:6px;display:block;">El PIN debe tener 4 dígitos. El colaborador solo puede ver la agenda y registrar citas.</span>
+      </div>
     </div>
   </div>
 </div>
@@ -294,7 +417,7 @@
   <div class="modal-box" style="max-width:520px;max-height:90vh;overflow:auto;">
     <div class="modal-hd">
       <h3 id="patModalName">Ficha de paciente</h3>
-      <button onclick="closePatModal()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:16px;">✕</button>
+      <button type="button" onclick="closePatModal()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:16px;">✕</button>
     </div>
     <div id="patModalContent" style="padding:18px;"></div>
   </div>
@@ -315,11 +438,16 @@ const FIREBASE_CONFIG = {
 };
 
 // ════ CONSTANTS ════
-const STORAGE_KEY = 'agendaDanielMarrero.v1';
+const STORAGE_KEY    = 'agendaDanielMarrero.v1';
+const CLINIC_CFG_KEY = 'danielClinicConfig';
+const AUTH_CFG_KEY   = 'danielAuthCfg';
+const USERS_CFG_KEY  = 'danielUsersCfg';
+const SESSION_KEY    = 'danielSession';
+
 const ORIGINS = {
-  propio:   {label:'Paciente de Daniel Marrero',          daniel:.80,clinic:.20,doctor:0},
-  doctoraA: {label:'Derivado Clínica Maria Elena Sanchez', daniel:.75,clinic:.25,doctor:0},
-  doctoraB: {label:'Derivado Clínica ABBA',               daniel:.20,clinic:0,  doctor:.80}
+  propio:   {label:'Paciente de Daniel Marrero',           daniel:.80, clinic:.20, doctor:0},
+  doctoraA: {label:'Derivado Clínica Maria Elena Sanchez',  daniel:.75, clinic:.25, doctor:0},
+  doctoraB: {label:'Derivado Clínica ABBA',                daniel:.20, clinic:0,   doctor:.80}
 };
 const STATUS_CFG = {
   pending:     {label:'⬛ Pendiente',    pill:'active-pending'},
@@ -356,6 +484,332 @@ function money(n){ return new Intl.NumberFormat('es-CL',{style:'currency',curren
 function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function getWeekStart(date){ const d=new Date(date); d.setDate(d.getDate()-((d.getDay()+6)%7)); d.setHours(0,0,0,0); return d; }
 function splitAmount(amount,origin){ const r=ORIGINS[origin]||ORIGINS.propio; return {daniel:amount*r.daniel,clinic:amount*r.clinic,doctor:amount*r.doctor}; }
+
+// ════ AUTH SYSTEM ════
+let authCfg  = {adminUser:'admin', adminPass:'daniel2025'};
+let usersList = [];
+let currentSession = null; // {role:'admin'|'user', name:string}
+let loginTab = 'admin';
+
+function loadAuth(){
+  try{
+    const a = localStorage.getItem(AUTH_CFG_KEY);
+    if(a) authCfg = JSON.parse(a);
+    const u = localStorage.getItem(USERS_CFG_KEY);
+    if(u) usersList = JSON.parse(u);
+  }catch(e){}
+}
+function saveAuth(){
+  try{
+    localStorage.setItem(AUTH_CFG_KEY, JSON.stringify(authCfg));
+    localStorage.setItem(USERS_CFG_KEY, JSON.stringify(usersList));
+  }catch(e){}
+}
+function getSession(){
+  try{
+    const s = sessionStorage.getItem(SESSION_KEY);
+    return s ? JSON.parse(s) : null;
+  }catch(e){ return null; }
+}
+function setSession(session){
+  try{ sessionStorage.setItem(SESSION_KEY, JSON.stringify(session)); }catch(e){}
+  currentSession = session;
+}
+function clearSession(){
+  try{ sessionStorage.removeItem(SESSION_KEY); }catch(e){}
+  currentSession = null;
+}
+function isAdmin(){ return currentSession && currentSession.role === 'admin'; }
+
+function checkSession(){
+  currentSession = getSession();
+  if(currentSession){
+    showApp();
+  } else {
+    showLoginScreen();
+  }
+}
+
+function showLoginScreen(){
+  updateLoginBrand();
+  populateUserDropdown();
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminErr').style.display = 'none';
+  document.getElementById('userErr').style.display = 'none';
+  document.getElementById('loginAdminUser').value = '';
+  document.getElementById('loginAdminPass').value = '';
+  document.getElementById('loginUserPin').value = '';
+  document.getElementById('loginAdminUser').focus();
+}
+
+function showApp(){
+  document.getElementById('loginScreen').style.display = 'none';
+  applyRoleUI();
+  updateUserBadge();
+}
+
+function applyRoleUI(){
+  const admin = isAdmin();
+  // Finanzas tab: admin only
+  document.getElementById('tabFinanzas').style.display = admin ? '' : 'none';
+  // Config button: admin only
+  document.getElementById('cfgBtn').style.display = admin ? '' : 'none';
+  // If user is on finanzas view but lost access, go to agenda
+  if(!admin && currentView === 'finanzas') showView('agenda');
+}
+
+function updateUserBadge(){
+  if(!currentSession) return;
+  document.getElementById('userDisplay').textContent = currentSession.name;
+  const rb = document.getElementById('roleBadge');
+  if(isAdmin()){
+    rb.textContent = 'Admin';
+    rb.className = 'role-tag admin';
+  } else {
+    rb.textContent = 'Colaborador';
+    rb.className = 'role-tag';
+  }
+}
+
+function doAdminLogin(){
+  const user = document.getElementById('loginAdminUser').value.trim();
+  const pass = document.getElementById('loginAdminPass').value;
+  const err  = document.getElementById('adminErr');
+  if(user === authCfg.adminUser && pass === authCfg.adminPass){
+    setSession({role:'admin', name:'Daniel Marrero'});
+    showApp();
+    renderCalendar();
+    if(fbOK) startSync();
+  } else {
+    err.textContent = 'Usuario o contraseña incorrectos.';
+    err.style.display = 'block';
+    document.getElementById('loginAdminPass').value = '';
+    document.getElementById('loginAdminPass').focus();
+  }
+}
+
+function doUserLogin(){
+  const name = document.getElementById('loginUserName').value;
+  const pin  = document.getElementById('loginUserPin').value.trim();
+  const err  = document.getElementById('userErr');
+  if(!name){ err.textContent='Selecciona tu nombre.'; err.style.display='block'; return; }
+  const found = usersList.find(u => u.name === name && u.pin === pin);
+  if(found){
+    setSession({role:'user', name:found.name});
+    showApp();
+    renderCalendar();
+    if(fbOK) startSync();
+  } else {
+    err.textContent = 'PIN incorrecto. Inténtalo de nuevo.';
+    err.style.display = 'block';
+    document.getElementById('loginUserPin').value = '';
+    document.getElementById('loginUserPin').focus();
+  }
+}
+
+function doLogout(){
+  if(!confirm('¿Cerrar sesión?')) return;
+  clearSession();
+  showLoginScreen();
+}
+
+function switchLoginTab(tab){
+  loginTab = tab;
+  document.getElementById('loginPanelAdmin').classList.toggle('hidden', tab !== 'admin');
+  document.getElementById('loginPanelUser').classList.toggle('hidden', tab !== 'user');
+  document.getElementById('ltAdmin').classList.toggle('active', tab === 'admin');
+  document.getElementById('ltUser').classList.toggle('active', tab === 'user');
+  document.getElementById('adminErr').style.display = 'none';
+  document.getElementById('userErr').style.display = 'none';
+  if(tab === 'admin') document.getElementById('loginAdminUser').focus();
+  else { populateUserDropdown(); document.getElementById('loginUserName').focus(); }
+}
+
+function populateUserDropdown(){
+  const sel = document.getElementById('loginUserName');
+  sel.innerHTML = '<option value="">— Selecciona —</option>';
+  usersList.forEach(u => {
+    const opt = document.createElement('option');
+    opt.value = u.name;
+    opt.textContent = u.name;
+    sel.appendChild(opt);
+  });
+  if(!usersList.length){
+    sel.innerHTML = '<option value="">Sin colaboradores registrados</option>';
+  }
+}
+
+function updateLoginBrand(){
+  const nameEl = document.getElementById('loginBrandName');
+  const logoEl = document.getElementById('loginBrandLogo');
+  nameEl.textContent = clinicConfig.name || 'Daniel Marrero Cosmetólogo';
+  if(clinicConfig.logo){ logoEl.src=clinicConfig.logo; logoEl.style.display='block'; }
+  else { logoEl.style.display='none'; }
+}
+
+// ── Admin: change password ──
+function changeAdminPass(){
+  const np  = document.getElementById('newAdminPass').value;
+  const npc = document.getElementById('newAdminPassConf').value;
+  const err = document.getElementById('passChangeErr');
+  err.style.display = 'none';
+  if(np.length < 4){ err.textContent='Mínimo 4 caracteres.'; err.style.display='block'; return; }
+  if(np !== npc){ err.textContent='Las contraseñas no coinciden.'; err.style.display='block'; return; }
+  authCfg.adminPass = np;
+  saveAuth();
+  document.getElementById('newAdminPass').value = '';
+  document.getElementById('newAdminPassConf').value = '';
+  alert('✅ Contraseña actualizada correctamente.');
+}
+
+// ── Admin: add/remove users ──
+function addUser(){
+  const name = document.getElementById('newUserName').value.trim();
+  const pin  = document.getElementById('newUserPin').value.trim();
+  const err  = document.getElementById('addUserErr');
+  err.style.display = 'none';
+  if(!name){ err.textContent='Ingresa un nombre.'; err.style.display='block'; return; }
+  if(!/^\d{4}$/.test(pin)){ err.textContent='El PIN debe tener exactamente 4 dígitos.'; err.style.display='block'; return; }
+  if(usersList.find(u=>u.name.toLowerCase()===name.toLowerCase())){ err.textContent='Ya existe un colaborador con ese nombre.'; err.style.display='block'; return; }
+  usersList.push({name, pin});
+  saveAuth();
+  document.getElementById('newUserName').value = '';
+  document.getElementById('newUserPin').value = '';
+  renderUsersList();
+}
+
+function removeUser(name){
+  if(!confirm(`¿Eliminar al colaborador "${name}"?`)) return;
+  usersList = usersList.filter(u => u.name !== name);
+  saveAuth();
+  renderUsersList();
+}
+
+function renderUsersList(){
+  const container = document.getElementById('usersList');
+  if(!container) return;
+  if(!usersList.length){
+    container.innerHTML = '<div style="font-size:12px;color:#94a3b8;padding:6px 0">No hay colaboradores registrados.</div>';
+    return;
+  }
+  container.innerHTML = usersList.map(u => `
+    <div class="user-row">
+      <span class="user-row-name">👤 ${escH(u.name)}</span>
+      <span class="user-row-pin">PIN: ••••</span>
+      <button type="button" class="user-row-del" onclick="removeUser('${escH(u.name)}')" title="Eliminar">🗑</button>
+    </div>`
+  ).join('');
+}
+
+// ════ CLINIC CONFIG ════
+let clinicConfig = {name:'', logo:''};
+
+function loadClinicConfig(){
+  try{
+    const raw = localStorage.getItem(CLINIC_CFG_KEY);
+    if(raw) clinicConfig = JSON.parse(raw);
+  }catch(e){}
+  updateNavBrand();
+}
+
+function saveClinicConfig(){
+  try{ localStorage.setItem(CLINIC_CFG_KEY, JSON.stringify(clinicConfig)); }catch(e){}
+}
+
+function updateNavBrand(){
+  const nameEl = document.getElementById('navName');
+  const logoEl = document.getElementById('navLogo');
+  if(clinicConfig.name) nameEl.textContent = clinicConfig.name;
+  else nameEl.textContent = '💆 Daniel Marrero';
+  if(clinicConfig.logo){ logoEl.src=clinicConfig.logo; logoEl.style.display='block'; }
+  else { logoEl.style.display='none'; }
+}
+
+function getClinicBrand(){
+  return { name: clinicConfig.name||'Daniel Marrero Cosmetólogo', logo: clinicConfig.logo||'' };
+}
+
+// ── Config modal ──
+let cfgTab = 'clinica';
+function switchCfgTab(tab){
+  cfgTab = tab;
+  document.getElementById('cfgSectionClinica').classList.toggle('hidden', tab!=='clinica');
+  document.getElementById('cfgSectionUsuarios').classList.toggle('hidden', tab!=='usuarios');
+  document.getElementById('cfgTabClinica').classList.toggle('active', tab==='clinica');
+  document.getElementById('cfgTabUsuarios').classList.toggle('active', tab==='usuarios');
+  if(tab==='usuarios') renderUsersList();
+}
+
+function openCfgModal(){
+  if(!isAdmin()){ alert('Solo el administrador puede acceder a la configuración.'); return; }
+  document.getElementById('cfgName').value = clinicConfig.name || '';
+  const prev = document.getElementById('logoPreview');
+  const removeBtn = document.getElementById('logoRemoveBtn');
+  const placeholder = document.getElementById('logoPlaceholder');
+  if(clinicConfig.logo){
+    prev.src = clinicConfig.logo; prev.style.display='block';
+    placeholder.style.display='none'; removeBtn.classList.remove('hidden');
+  } else {
+    prev.style.display='none'; placeholder.style.display='';
+    removeBtn.classList.add('hidden');
+  }
+  updateCfgPreview();
+  switchCfgTab('clinica');
+  document.getElementById('cfgModal').classList.remove('hidden');
+  document.getElementById('cfgName').focus();
+}
+
+function closeCfgModal(){
+  document.getElementById('cfgModal').classList.add('hidden');
+}
+
+function handleLogoUpload(e){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    const data = ev.target.result;
+    document.getElementById('logoPreview').src = data;
+    document.getElementById('logoPreview').style.display = 'block';
+    document.getElementById('logoPlaceholder').style.display = 'none';
+    document.getElementById('logoRemoveBtn').classList.remove('hidden');
+    clinicConfig.logo = data;
+    updateCfgPreview();
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeLogo(){
+  clinicConfig.logo = '';
+  document.getElementById('logoPreview').style.display = 'none';
+  document.getElementById('logoPreview').src = '';
+  document.getElementById('logoPlaceholder').style.display = '';
+  document.getElementById('logoRemoveBtn').classList.add('hidden');
+  document.getElementById('logoFileInput').value = '';
+  updateCfgPreview();
+}
+
+function updateCfgPreview(){
+  const name  = document.getElementById('cfgName').value.trim();
+  const brand = document.getElementById('cfgPreviewBrand');
+  const pLogo = document.getElementById('cfgPreviewLogo');
+  const pName = document.getElementById('cfgPreviewName');
+  if(!name && !clinicConfig.logo){ brand.classList.add('hidden'); return; }
+  brand.classList.remove('hidden');
+  pName.textContent = name || 'Nombre de clínica';
+  if(clinicConfig.logo){ pLogo.src=clinicConfig.logo; pLogo.style.display='block'; }
+  else { pLogo.style.display='none'; }
+}
+
+function saveCfg(){
+  clinicConfig.name = document.getElementById('cfgName').value.trim();
+  saveClinicConfig();
+  updateNavBrand();
+  updateLoginBrand();
+  closeCfgModal();
+}
+
+document.getElementById('cfgModal').addEventListener('click', e=>{ if(e.target.id==='cfgModal') closeCfgModal(); });
+document.getElementById('cfgName').addEventListener('input', updateCfgPreview);
 
 // ════ PERSISTENCE ════
 let saveTimers={};
@@ -434,7 +888,6 @@ function getAllStats(){
 // ════ KNOWN PATIENTS (autocomplete engine) ════
 function getKnownPatients(){
   const map=new Map();
-  // Sort dates desc to get most recent first
   const sortedDates=Object.keys(state.appointments).sort().reverse();
   sortedDates.forEach(dk=>{
     const day=state.appointments[dk]||{};
@@ -454,7 +907,6 @@ function renderCalendar(){
   for(let i=0;i<7;i++){ const d=new Date(ws); d.setDate(ws.getDate()+i); days.push(d); }
   const todayKey=toDateKey(today);
 
-  // Toolbar date label
   document.getElementById('dateLabel').textContent=
     `${days[0].toLocaleDateString('es-ES',{day:'2-digit',month:'short'})} — ${days[6].toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'})}`;
 
@@ -495,7 +947,7 @@ function goToday(){ state.weekStart=getWeekStart(today); state.selectedDate=toDa
 function selectDate(dk){ state.selectedDate=dk; state.weekStart=getWeekStart(parseDateKey(dk)); renderCalendar(); }
 
 // ════ APPOINTMENT MODAL ════
-let apptContext = null; // {dateKey, hour}
+let apptContext = null;
 let apptStatus  = 'pending';
 let acIndex     = -1;
 let acResults   = [];
@@ -514,7 +966,8 @@ function openApptModal(dateKey, hour){
   document.getElementById('apptAmount').value=slot.amount||'';
   document.getElementById('apptNotes').value=slot.notes||'';
   document.getElementById('acDrop').classList.add('hidden');
-  document.getElementById('apptDelBtn').classList.toggle('hidden',isNew);
+  // Delete button: admin only
+  document.getElementById('apptDelBtn').classList.toggle('hidden', isNew || !isAdmin());
 
   selectStatus(slot.status||'pending');
   updateSplitPreview();
@@ -569,6 +1022,7 @@ function saveAppt(){
 }
 
 function deleteAppt(){
+  if(!isAdmin()){ alert('Solo el administrador puede eliminar citas.'); return; }
   if(!apptContext) return;
   const {dateKey,hour}=apptContext;
   if(!confirm('¿Eliminar esta cita?')) return;
@@ -595,7 +1049,7 @@ function onPatientInput(){
         <div class="ac-name">${escH(p.name)}</div>
         <div class="ac-meta">Última visita: ${lastDate} · ${escH(p.lastSlot.attentionType||'—')} · ${money(Number(p.lastSlot.amount)||0)} · ${p.count} cita(s)</div>
       </div>`;
-    }).join('')+`<div class="ac-item" style="border-top:1px solid #e2e8f0"><span class="ac-new">➕ Nuevo paciente: "${escH(q)}"</span></div>`;
+    }).join('')+`<div class="ac-item" style="border-top:1px solid #e2e8f0"><span class="ac-new">➕ Nuevo: "${escH(q)}"</span></div>`;
     drop.querySelectorAll('.ac-item[data-idx]').forEach(el=>{
       el.onclick=()=>{ selectPatient(results[parseInt(el.dataset.idx)]); };
     });
@@ -624,7 +1078,6 @@ function selectPatient(p){
   document.getElementById('apptType').focus();
 }
 
-// Close dropdown clicking outside
 document.addEventListener('click',e=>{ if(!e.target.closest('#apptPatient')&&!e.target.closest('#acDrop')) document.getElementById('acDrop').classList.add('hidden'); });
 
 // ════ PATIENT PROFILE MODAL ════
@@ -657,7 +1110,7 @@ function openPatModal(name){
           </div>
           ${v.attentionType?`<div style="font-size:12px;color:#64748b;margin-top:3px">${escH(v.attentionType)}</div>`:''}
           ${v.notes?`<div style="font-size:11px;color:#94a3b8;margin-top:2px;font-style:italic">${escH(v.notes)}</div>`:''}
-          <button onclick="openApptModal('${v.dateKey}',${v.hour})" style="margin-top:5px;font-size:11px;color:#1d4ed8;background:none;border:none;cursor:pointer;text-decoration:underline;">Editar cita</button>
+          <button type="button" onclick="openApptModal('${v.dateKey}',${v.hour})" style="margin-top:5px;font-size:11px;color:#1d4ed8;background:none;border:none;cursor:pointer;text-decoration:underline;">Editar cita</button>
         </div>`;
       }).join('')
     }
@@ -678,7 +1131,6 @@ function renderPacientes(){
   if(!patients.length){ list.innerHTML='<div style="color:#94a3b8;font-size:13px;grid-column:span 2">No se encontraron pacientes.</div>'; return; }
   list.innerHTML=patients.map(p=>{
     const lastD=parseDateKey(p.lastSlot.dateKey).toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'});
-    const tot=getKnownPatients().find(x=>x.name===p.name)||p;
     return `<div class="pat-card" onclick="openPatModal('${escH(p.name)}')">
       <div style="display:flex;justify-content:space-between;align-items:start;">
         <div>
@@ -697,6 +1149,7 @@ function renderPacientes(){
 
 // ════ FINANCES VIEW ════
 function renderFinanzas(){
+  if(!isAdmin()){ showView('agenda'); return; }
   const fin=document.getElementById('finContent'); if(!fin) return;
   const all=getAllStats();
   const monthStats={};
@@ -737,6 +1190,7 @@ function renderFinanzas(){
 // ════ NAVIGATION ════
 let currentView='agenda';
 function showView(v){
+  if(v==='finanzas' && !isAdmin()) return;
   currentView=v;
   ['agenda','pacientes','finanzas'].forEach(name=>{
     document.getElementById('view'+name.charAt(0).toUpperCase()+name.slice(1)).classList.toggle('hidden',name!==v);
@@ -747,120 +1201,11 @@ function showView(v){
   if(v==='finanzas') renderFinanzas();
 }
 
-// ════ CLINIC CONFIG ════
-const CLINIC_CFG_KEY = 'danielClinicConfig';
-let clinicConfig = {name:'', logo:''};
-
-function loadClinicConfig(){
-  try{
-    const raw = localStorage.getItem(CLINIC_CFG_KEY);
-    if(raw) clinicConfig = JSON.parse(raw);
-  }catch(e){}
-  updateNavBrand();
-}
-
-function saveClinicConfig(){
-  try{ localStorage.setItem(CLINIC_CFG_KEY, JSON.stringify(clinicConfig)); }catch(e){}
-}
-
-function updateNavBrand(){
-  const nameEl  = document.getElementById('navName');
-  const logoEl  = document.getElementById('navLogo');
-  const display = clinicConfig.name || 'Daniel Marrero';
-  nameEl.textContent = display;
-  if(clinicConfig.logo){
-    logoEl.src = clinicConfig.logo;
-    logoEl.style.display = 'block';
-  } else {
-    logoEl.style.display = 'none';
-    if(!clinicConfig.name) nameEl.textContent = '💆 Daniel Marrero';
-  }
-}
-
-// Returns brand data for use in prints / emails / WhatsApp
-function getClinicBrand(){
-  return {
-    name:  clinicConfig.name  || 'Daniel Marrero Cosmetólogo',
-    logo:  clinicConfig.logo  || ''
-  };
-}
-
-function openCfgModal(){
-  document.getElementById('cfgName').value = clinicConfig.name || '';
-  const prev = document.getElementById('logoPreview');
-  const removeBtn = document.getElementById('logoRemoveBtn');
-  const placeholder = document.getElementById('logoPlaceholder');
-  if(clinicConfig.logo){
-    prev.src = clinicConfig.logo;
-    prev.style.display = 'block';
-    placeholder.style.display = 'none';
-    removeBtn.classList.remove('hidden');
-  } else {
-    prev.style.display = 'none';
-    placeholder.style.display = '';
-    removeBtn.classList.add('hidden');
-  }
-  updateCfgPreview();
-  document.getElementById('cfgModal').classList.remove('hidden');
-  document.getElementById('cfgName').focus();
-}
-
-function closeCfgModal(){
-  document.getElementById('cfgModal').classList.add('hidden');
-}
-
-function handleLogoUpload(e){
-  const file = e.target.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = function(ev){
-    const data = ev.target.result;
-    document.getElementById('logoPreview').src = data;
-    document.getElementById('logoPreview').style.display = 'block';
-    document.getElementById('logoPlaceholder').style.display = 'none';
-    document.getElementById('logoRemoveBtn').classList.remove('hidden');
-    clinicConfig.logo = data;
-    updateCfgPreview();
-  };
-  reader.readAsDataURL(file);
-}
-
-function removeLogo(){
-  clinicConfig.logo = '';
-  document.getElementById('logoPreview').style.display = 'none';
-  document.getElementById('logoPreview').src = '';
-  document.getElementById('logoPlaceholder').style.display = '';
-  document.getElementById('logoRemoveBtn').classList.add('hidden');
-  document.getElementById('logoFileInput').value = '';
-  updateCfgPreview();
-}
-
-function updateCfgPreview(){
-  const name = document.getElementById('cfgName').value.trim();
-  const brand = document.getElementById('cfgPreviewBrand');
-  const pLogo = document.getElementById('cfgPreviewLogo');
-  const pName = document.getElementById('cfgPreviewName');
-  if(!name && !clinicConfig.logo){ brand.classList.add('hidden'); return; }
-  brand.classList.remove('hidden');
-  pName.textContent = name || 'Nombre de clínica';
-  if(clinicConfig.logo){ pLogo.src = clinicConfig.logo; pLogo.style.display = 'block'; }
-  else { pLogo.style.display = 'none'; }
-}
-
-function saveCfg(){
-  clinicConfig.name = document.getElementById('cfgName').value.trim();
-  saveClinicConfig();
-  updateNavBrand();
-  closeCfgModal();
-}
-
-document.getElementById('cfgModal').addEventListener('click', e=>{ if(e.target.id==='cfgModal') closeCfgModal(); });
-document.getElementById('cfgName').addEventListener('input', updateCfgPreview);
-
 // ════ BOOT ════
 loadLocal();
 loadClinicConfig();
-if(fbOK) startSync();
-renderCalendar();
+loadAuth();
+checkSession(); // shows login screen or app based on sessionStorage
 </script>
 </body>
 </html>
