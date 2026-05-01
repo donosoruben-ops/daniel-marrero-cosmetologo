@@ -935,7 +935,27 @@ function listenConfig(){
 
 function bootSync(){
   if(!db) return;
-  ensureAuth().then(()=>listenConfig()).catch(e=>console.warn('Boot sync:',e));
+  ensureAuth().then(()=>{ listenConfig(); migrateLocalConfig(); }).catch(e=>console.warn('Boot sync:',e));
+}
+
+async function migrateLocalConfig(){
+  if(!db) return;
+  try{
+    const [authDoc, usersDoc, clinicDoc] = await Promise.all([
+      db.collection('_config').doc('auth').get(),
+      db.collection('_config').doc('users').get(),
+      db.collection('_config').doc('clinic').get()
+    ]);
+    if(!usersDoc.exists && usersList.length > 0)
+      await saveConfigDoc('users', {list: usersList});
+    if(!authDoc.exists)
+      await saveConfigDoc('auth', {adminUser: authCfg.adminUser, adminPass: authCfg.adminPass});
+    if(!clinicDoc.exists && clinicConfig.name){
+      const d = {name: clinicConfig.name};
+      if(clinicConfig.logo && clinicConfig.logo.length < 800000) d.logo = clinicConfig.logo;
+      await saveConfigDoc('clinic', d);
+    }
+  }catch(e){ console.warn('Config migration:', e); }
 }
 
 // ════ DATA HELPERS ════
