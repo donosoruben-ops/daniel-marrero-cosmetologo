@@ -2040,27 +2040,26 @@ function renderSvcItems(ci){
   const cat=getServicios()[ci]; if(!cat) return;
   const pane=document.getElementById('svcItemsPane');
   if(cat.tipo==='sesiones'&&cat.items.length){
+    const has6=cat.items.some(it=>it.s6>0);
+    const cols=[{n:1,key:'s1',label:'1 Sesión'},{n:3,key:'s3',label:'3 Sesiones'}];
+    if(has6) cols.push({n:6,key:'s6',label:'6 Sesiones'});
     pane.innerHTML=`
       <div style="font-size:11px;color:#64748b;margin-bottom:10px;">Selecciona zona y número de sesiones:</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px;">
         <thead><tr style="background:#f8fafc;position:sticky;top:0;">
           <th style="text-align:left;padding:7px 10px;border:1px solid #e2e8f0;font-weight:700;">Zona</th>
-          <th style="padding:7px;border:1px solid #e2e8f0;text-align:center;white-space:nowrap;">1 Sesión</th>
-          <th style="padding:7px;border:1px solid #e2e8f0;text-align:center;white-space:nowrap;">3 Sesiones</th>
-          <th style="padding:7px;border:1px solid #e2e8f0;text-align:center;white-space:nowrap;">6 Sesiones</th>
+          ${cols.map(c=>`<th style="padding:7px;border:1px solid #e2e8f0;text-align:center;white-space:nowrap;">${c.label}</th>`).join('')}
         </tr></thead>
         <tbody>${cat.items.map(item=>`
           <tr>
             <td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:600;">${escH(item.zona)}</td>
-            ${[{n:1,v:item.s1},{n:3,v:item.s3},{n:6,v:item.s6}].filter(x=>x.v).map(({n,v})=>`
-              <td style="border:1px solid #e2e8f0;text-align:center;padding:4px;">
+            ${cols.map(({n,key})=>{ const v=item[key]||0; return `<td style="border:1px solid #e2e8f0;text-align:center;padding:4px;">${v?`
                 <button type="button" onclick="selectSvcItem('${escH(cat.nombre)} - ${escH(item.zona)} (${n} ses.)',${v},${n})"
                   style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;font-weight:700;transition:all .1s;"
                   onmouseover="this.style.background='var(--blue)';this.style.color='#fff';"
                   onmouseout="this.style.background='#eff6ff';this.style.color='#1d4ed8';">
                   $${(v/1000).toFixed(0)}k
-                </button>
-              </td>`).join('')}
+                </button>`:''}</td>`; }).join('')}
           </tr>`).join('')}
         </tbody>
       </table>`;
