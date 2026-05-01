@@ -106,6 +106,24 @@
     /* Spinner */
     @keyframes spin{to{transform:rotate(360deg)}}
     .spin{animation:spin .7s linear infinite;display:inline-block;width:16px;height:16px;border:2px solid #bfdbfe;border-top-color:var(--blue);border-radius:50%;}
+
+    /* CONFIG MODAL */
+    #cfgModal .modal-box{max-width:420px;}
+    #logoPreview{width:100%;max-height:120px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:none;margin-top:6px;}
+    #logoPlaceholder{border:2px dashed #cbd5e1;border-radius:8px;padding:24px;text-align:center;color:#94a3b8;font-size:13px;cursor:pointer;transition:border-color .12s;}
+    #logoPlaceholder:hover{border-color:var(--blue);color:var(--blue);}
+    .cfg-gear{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:16px;line-height:1;transition:background .12s;}
+    .cfg-gear:hover{background:rgba(255,255,255,.28);}
+    #navBrand{display:flex;align-items:center;gap:8px;margin-right:20px;}
+    #userBadge{margin-left:8px;}
+    .cfg-hint{font-size:11px;color:#94a3b8;margin-top:2px;}
+    #logoFileInput{display:none;}
+    .cfg-logo-remove{margin-top:6px;font-size:11px;padding:5px 10px;}
+    #cfgPreviewBrand{background:#1a56b0;border-radius:10px;padding:12px 16px;display:flex;align-items:center;gap:10px;}
+    #cfgPreviewLogo{height:36px;border-radius:5px;display:none;object-fit:contain;}
+    #cfgPreviewName{color:#fff;font-weight:800;font-size:15px;}
+    #navLogo{height:32px;border-radius:5px;display:none;object-fit:contain;}
+    #navName{font-weight:800;font-size:15px;letter-spacing:.3px;white-space:nowrap;}
   </style>
 </head>
 <body>
@@ -118,7 +136,10 @@
 
 <!-- TOP NAV -->
 <nav id="topNav">
-  <div class="logo">💆 Daniel Marrero</div>
+  <div id="navBrand">
+    <img id="navLogo" src="" alt="logo">
+    <span id="navName">💆 Daniel Marrero</span>
+  </div>
   <div class="nav-tab active" id="tabAgenda" onclick="showView('agenda')">
     <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
     Agenda
@@ -132,6 +153,7 @@
     Finanzas
   </div>
   <div class="sp"></div>
+  <button type="button" class="cfg-gear" onclick="openCfgModal()" title="Configurar clínica">⚙️</button>
   <div id="userBadge">
     <span id="syncDot"></span>
     <span id="userDisplay">Daniel Marrero</span>
@@ -229,6 +251,40 @@
       <button class="btn-del hidden" id="apptDelBtn" onclick="deleteAppt()">🗑 Eliminar</button>
       <button class="btn-cancel" onclick="closeApptModal()">Cancelar</button>
       <button class="btn-save" onclick="saveAppt()">Guardar cita</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CLINIC CONFIG MODAL ══ -->
+<div id="cfgModal" class="modal-bg hidden">
+  <div class="modal-box">
+    <div class="modal-hd">
+      <h3>Configuración de clínica</h3>
+      <button type="button" onclick="closeCfgModal()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:16px;">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label>Nombre de la clínica / profesional</label>
+        <input id="cfgName" class="fi" type="text" placeholder="Ej: Cosmetología Daniel Marrero">
+        <span class="cfg-hint">Aparecerá en el encabezado, presupuestos, recetas y correos.</span>
+      </div>
+      <div class="field-group">
+        <label>Logo</label>
+        <div id="logoPlaceholder" onclick="document.getElementById('logoFileInput').click()">
+          📷 Haz clic para subir logo (PNG, JPG, SVG)
+        </div>
+        <input id="logoFileInput" type="file" accept="image/*" onchange="handleLogoUpload(event)">
+        <img id="logoPreview" src="" alt="preview logo">
+        <button type="button" id="logoRemoveBtn" class="btn-del cfg-logo-remove hidden" onclick="removeLogo()">✕ Quitar logo</button>
+      </div>
+      <div id="cfgPreviewBrand" class="hidden">
+        <img id="cfgPreviewLogo" src="" alt="">
+        <span id="cfgPreviewName"></span>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button type="button" class="btn-cancel" onclick="closeCfgModal()">Cancelar</button>
+      <button type="button" class="btn-save" onclick="saveCfg()">Guardar configuración</button>
     </div>
   </div>
 </div>
@@ -691,8 +747,118 @@ function showView(v){
   if(v==='finanzas') renderFinanzas();
 }
 
+// ════ CLINIC CONFIG ════
+const CLINIC_CFG_KEY = 'danielClinicConfig';
+let clinicConfig = {name:'', logo:''};
+
+function loadClinicConfig(){
+  try{
+    const raw = localStorage.getItem(CLINIC_CFG_KEY);
+    if(raw) clinicConfig = JSON.parse(raw);
+  }catch(e){}
+  updateNavBrand();
+}
+
+function saveClinicConfig(){
+  try{ localStorage.setItem(CLINIC_CFG_KEY, JSON.stringify(clinicConfig)); }catch(e){}
+}
+
+function updateNavBrand(){
+  const nameEl  = document.getElementById('navName');
+  const logoEl  = document.getElementById('navLogo');
+  const display = clinicConfig.name || 'Daniel Marrero';
+  nameEl.textContent = display;
+  if(clinicConfig.logo){
+    logoEl.src = clinicConfig.logo;
+    logoEl.style.display = 'block';
+  } else {
+    logoEl.style.display = 'none';
+    if(!clinicConfig.name) nameEl.textContent = '💆 Daniel Marrero';
+  }
+}
+
+// Returns brand data for use in prints / emails / WhatsApp
+function getClinicBrand(){
+  return {
+    name:  clinicConfig.name  || 'Daniel Marrero Cosmetólogo',
+    logo:  clinicConfig.logo  || ''
+  };
+}
+
+function openCfgModal(){
+  document.getElementById('cfgName').value = clinicConfig.name || '';
+  const prev = document.getElementById('logoPreview');
+  const removeBtn = document.getElementById('logoRemoveBtn');
+  const placeholder = document.getElementById('logoPlaceholder');
+  if(clinicConfig.logo){
+    prev.src = clinicConfig.logo;
+    prev.style.display = 'block';
+    placeholder.style.display = 'none';
+    removeBtn.classList.remove('hidden');
+  } else {
+    prev.style.display = 'none';
+    placeholder.style.display = '';
+    removeBtn.classList.add('hidden');
+  }
+  updateCfgPreview();
+  document.getElementById('cfgModal').classList.remove('hidden');
+  document.getElementById('cfgName').focus();
+}
+
+function closeCfgModal(){
+  document.getElementById('cfgModal').classList.add('hidden');
+}
+
+function handleLogoUpload(e){
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    const data = ev.target.result;
+    document.getElementById('logoPreview').src = data;
+    document.getElementById('logoPreview').style.display = 'block';
+    document.getElementById('logoPlaceholder').style.display = 'none';
+    document.getElementById('logoRemoveBtn').classList.remove('hidden');
+    clinicConfig.logo = data;
+    updateCfgPreview();
+  };
+  reader.readAsDataURL(file);
+}
+
+function removeLogo(){
+  clinicConfig.logo = '';
+  document.getElementById('logoPreview').style.display = 'none';
+  document.getElementById('logoPreview').src = '';
+  document.getElementById('logoPlaceholder').style.display = '';
+  document.getElementById('logoRemoveBtn').classList.add('hidden');
+  document.getElementById('logoFileInput').value = '';
+  updateCfgPreview();
+}
+
+function updateCfgPreview(){
+  const name = document.getElementById('cfgName').value.trim();
+  const brand = document.getElementById('cfgPreviewBrand');
+  const pLogo = document.getElementById('cfgPreviewLogo');
+  const pName = document.getElementById('cfgPreviewName');
+  if(!name && !clinicConfig.logo){ brand.classList.add('hidden'); return; }
+  brand.classList.remove('hidden');
+  pName.textContent = name || 'Nombre de clínica';
+  if(clinicConfig.logo){ pLogo.src = clinicConfig.logo; pLogo.style.display = 'block'; }
+  else { pLogo.style.display = 'none'; }
+}
+
+function saveCfg(){
+  clinicConfig.name = document.getElementById('cfgName').value.trim();
+  saveClinicConfig();
+  updateNavBrand();
+  closeCfgModal();
+}
+
+document.getElementById('cfgModal').addEventListener('click', e=>{ if(e.target.id==='cfgModal') closeCfgModal(); });
+document.getElementById('cfgName').addEventListener('input', updateCfgPreview);
+
 // ════ BOOT ════
 loadLocal();
+loadClinicConfig();
 if(fbOK) startSync();
 renderCalendar();
 </script>
