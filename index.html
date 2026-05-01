@@ -311,10 +311,21 @@
           <div class="st-pill" data-st="rescheduled" onclick="selectStatus('rescheduled')">🔄 Reprogramado</div>
         </div>
       </div>
+      <div class="field-group">
+        <label>Box de atención</label>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <select id="apptBox" class="fi" style="width:auto;flex:1;" onchange="onBoxChange(this.value)">
+          </select>
+          <span id="apptBoxLabel" style="font-size:12px;color:#64748b;white-space:nowrap;"></span>
+        </div>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
         <div class="field-group">
           <label>Tipo de atención</label>
-          <input id="apptType" class="fi" type="text" placeholder="Facial, masaje...">
+          <div style="display:flex;gap:6px;">
+            <input id="apptType" class="fi" type="text" placeholder="Facial, masaje..." style="flex:1;">
+            <button type="button" onclick="openSvcPicker()" style="background:var(--blue);color:#fff;border:none;border-radius:8px;padding:0 10px;cursor:pointer;font-size:14px;flex-shrink:0;" title="Seleccionar servicio">🔍</button>
+          </div>
         </div>
         <div class="field-group">
           <label>Origen</label>
@@ -358,6 +369,8 @@
     <div class="cfg-tabs">
       <div class="cfg-tab active" id="cfgTabClinica" onclick="switchCfgTab('clinica')">🏥 Clínica</div>
       <div class="cfg-tab" id="cfgTabUsuarios" onclick="switchCfgTab('usuarios')">👥 Usuarios</div>
+      <div class="cfg-tab" id="cfgTabBoxes" onclick="switchCfgTab('boxes')">📦 Boxes</div>
+      <div class="cfg-tab" id="cfgTabServicios" onclick="switchCfgTab('servicios')">💈 Servicios</div>
     </div>
     <!-- Tab: Clínica -->
     <div id="cfgSectionClinica" class="cfg-section">
@@ -424,6 +437,35 @@
         <span class="cfg-hint" style="margin-top:6px;display:block;">El PIN debe tener 4 dígitos. El colaborador solo puede ver la agenda y registrar citas.</span>
       </div>
     </div>
+    <!-- Tab: Boxes -->
+    <div id="cfgSectionBoxes" class="cfg-section hidden">
+      <div style="font-size:12px;color:#64748b;margin-bottom:12px;">Nombra cada box o sala de atención. Estos nombres aparecen en la agenda y al crear citas.</div>
+      <div id="boxesList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <div class="modal-ft" style="padding:0;border:none;margin-top:14px;">
+        <button type="button" class="btn-cancel" onclick="closeCfgModal()">Cancelar</button>
+        <button type="button" class="btn-save" onclick="saveBoxesCfg()">Guardar nombres</button>
+      </div>
+    </div>
+    <!-- Tab: Servicios -->
+    <div id="cfgSectionServicios" class="cfg-section hidden" style="padding:0;">
+      <div id="svcAdminPane" style="padding:16px;max-height:60vh;overflow-y:auto;"></div>
+      <div class="modal-ft" style="flex-shrink:0;">
+        <button type="button" class="btn-cancel" onclick="closeCfgModal()">Cancelar</button>
+        <button type="button" class="btn-save" onclick="saveServiciosCfg()">Guardar precios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SERVICE PICKER MODAL ══ -->
+<div id="svcModal" class="modal-bg hidden">
+  <div class="modal-box" style="max-width:580px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
+    <div class="modal-hd" style="flex-shrink:0;">
+      <h3>Seleccionar servicio y precio</h3>
+      <button type="button" onclick="closeSvcPicker()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:16px;">✕</button>
+    </div>
+    <div style="padding:10px 14px;border-bottom:1px solid #f1f5f9;display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;" id="svcCatBtns"></div>
+    <div style="flex:1;overflow-y:auto;padding:12px 14px;" id="svcItemsPane"></div>
   </div>
 </div>
 
@@ -579,6 +621,55 @@ const STATUS_CFG = {
   rescheduled: {label:'🔄 Reprogramado', pill:'active-rescheduled'}
 };
 const HOURS = Array.from({length:14},(_,i)=>i+8); // 08:00 – 21:00
+const NUM_BOXES = 4;
+// Box 1 = key hour (integer, backward compat); Box N = key hour+(N-1)*100
+function slotKey(hour,box){ return box<=1?hour:(box-1)*100+hour; }
+function keyToHourBox(k){ const n=parseInt(k); if(n<100) return{hour:n,box:1}; return{box:Math.floor(n/100)+1,hour:n%100}; }
+
+// ════ DEFAULT SERVICES CATALOG ════
+const DEFAULT_SERVICIOS = [
+  { id:'depilacion', nombre:'Depilación Láser', tipo:'sesiones', items:[
+    {zona:'Rostro Completo Mujer',s1:36000,s3:90000,s6:150000},
+    {zona:'Rostro Completo Hombre',s1:43200,s3:108000,s6:180000},
+    {zona:'Barba Completa',s1:40800,s3:102000,s6:170000},
+    {zona:'Bozo + Patillas',s1:16800,s3:42000,s6:70000},
+    {zona:'Bozo + Entrecejo',s1:15600,s3:39000,s6:65000},
+    {zona:'Axilas',s1:20400,s3:51000,s6:85000},
+    {zona:'Pecho Hombre',s1:43200,s3:108000,s6:180000},
+    {zona:'Abdomen Hombre',s1:38400,s3:96000,s6:160000},
+    {zona:'Abdomen Mujer',s1:26400,s3:66000,s6:110000},
+    {zona:'Rebaje Mujer',s1:38400,s3:96000,s6:160000},
+    {zona:'Rebaje + Interglúteos Mujer',s1:40800,s3:102000,s6:170000},
+    {zona:'Rebaje Hombre',s1:43200,s3:108000,s6:180000},
+    {zona:'Glúteos',s1:38400,s3:96000,s6:160000},
+    {zona:'Interglúteos',s1:21600,s3:54000,s6:90000},
+    {zona:'Bikini',s1:21600,s3:54000,s6:90000},
+    {zona:'Piernas Completas Hombre',s1:67200,s3:168000,s6:280000},
+    {zona:'Piernas Completas Mujer',s1:60000,s3:150000,s6:250000},
+    {zona:'Medio Pierna',s1:48000,s3:120000,s6:200000},
+    {zona:'Espalda Completa',s1:60000,s3:150000,s6:250000},
+    {zona:'Medio Espalda Superior',s1:40800,s3:102000,s6:170000},
+    {zona:'Medio Espalda Inferior',s1:38400,s3:96000,s6:160000},
+    {zona:'Orejas',s1:16800,s3:42000,s6:70000},
+    {zona:'Empeine',s1:20400,s3:51000,s6:85000},
+    {zona:'Antebrazos',s1:31200,s3:78000,s6:130000},
+    {zona:'Brazos Completos',s1:50400,s3:126000,s6:210000},
+    {zona:'Cuello Anterior',s1:19200,s3:48000,s6:80000},
+    {zona:'Cuello Posterior',s1:19200,s3:48000,s6:80000},
+    {zona:'Cuello Completo',s1:28800,s3:72000,s6:120000},
+    {zona:'Hombros',s1:31200,s3:78000,s6:130000},
+    {zona:'Bozo',s1:14400,s3:36000,s6:60000},
+    {zona:'Delineado Barba',s1:16800,s3:42000,s6:70000}
+  ]},
+  {id:'facial',nombre:'Facial / Cosmetología',tipo:'simple',items:[]},
+  {id:'masaje',nombre:'Masajes',tipo:'simple',items:[]},
+  {id:'otro',nombre:'Otro servicio',tipo:'simple',items:[]}
+];
+
+// ════ BOX CONFIG DEFAULTS ════
+const DEFAULT_BOXES = ['Box 1','Box 2','Box 3','Box 4'];
+let boxesConfig = [...DEFAULT_BOXES];
+let serviciosCfg = null; // loaded from Firestore
 
 // ════ FIREBASE ════
 let db=null, fbAuth=null, fbOK=false, unsubSchedule=null;
@@ -834,7 +925,7 @@ let clinicConfig = {name:'', logo:''};
 function loadClinicConfig(){
   try{
     const raw = localStorage.getItem(CLINIC_CFG_KEY);
-    if(raw) clinicConfig = JSON.parse(raw);
+    if(raw){ clinicConfig = JSON.parse(raw); if(clinicConfig.boxes) loadBoxesFromConfig({names:clinicConfig.boxes}); }
   }catch(e){}
   updateNavBrand();
 }
@@ -842,8 +933,7 @@ function loadClinicConfig(){
 function saveClinicConfig(){
   try{ localStorage.setItem(CLINIC_CFG_KEY, JSON.stringify(clinicConfig)); }catch(e){}
   if(fbOK){
-    const toStore={name:clinicConfig.name||''};
-    // Only sync logo if it's under 800KB (Firestore doc limit is 1MB)
+    const toStore={name:clinicConfig.name||'', boxes:boxesConfig};
     if(clinicConfig.logo && clinicConfig.logo.length < 800000) toStore.logo=clinicConfig.logo;
     else if(!clinicConfig.logo) toStore.logo='';
     saveConfigDoc('clinic', toStore);
@@ -865,13 +955,18 @@ function getClinicBrand(){
 
 // ── Config modal ──
 let cfgTab = 'clinica';
+const CFG_TABS = ['clinica','usuarios','boxes','servicios'];
 function switchCfgTab(tab){
   cfgTab = tab;
-  document.getElementById('cfgSectionClinica').classList.toggle('hidden', tab!=='clinica');
-  document.getElementById('cfgSectionUsuarios').classList.toggle('hidden', tab!=='usuarios');
-  document.getElementById('cfgTabClinica').classList.toggle('active', tab==='clinica');
-  document.getElementById('cfgTabUsuarios').classList.toggle('active', tab==='usuarios');
+  CFG_TABS.forEach(t=>{
+    const sec=document.getElementById('cfgSection'+t.charAt(0).toUpperCase()+t.slice(1));
+    const btn=document.getElementById('cfgTab'+t.charAt(0).toUpperCase()+t.slice(1));
+    if(sec) sec.classList.toggle('hidden',t!==tab);
+    if(btn) btn.classList.toggle('active',t===tab);
+  });
   if(tab==='usuarios') renderUsersList();
+  if(tab==='boxes') renderBoxesCfg();
+  if(tab==='servicios') renderSvcAdmin();
 }
 
 function openCfgModal(){
@@ -977,7 +1072,10 @@ function loadLocal(){
 }
 function normalizeDay(data){
   const r={};
-  Object.entries(data||{}).forEach(function(e){ const n=parseInt(e[0]); r[isNaN(n)?e[0]:n]=e[1]; });
+  Object.entries(data||{}).forEach(function([k,v]){
+    const n=parseInt(k);
+    if(!isNaN(n)) r[n]=v; else r[k]=v;
+  });
   return r;
 }
 
@@ -1059,7 +1157,9 @@ function listenConfig(){
         try{ localStorage.setItem(CLINIC_CFG_KEY,JSON.stringify(clinicConfig)); }catch(e){}
         updateNavBrand();
         updateLoginBrand();
+        if(d.boxes) loadBoxesFromConfig({names:d.boxes});
       }
+      if(doc.id==='servicios' && d){ loadServiciosFromConfig(d); }
     });
   },e=>console.warn('Config listener:',e));
 }
@@ -1091,9 +1191,10 @@ async function migrateLocalConfig(){
 
 // ════ DATA HELPERS ════
 function getDayData(dk){ if(!state.appointments[dk]) state.appointments[dk]={}; return state.appointments[dk]; }
+function allBoxKeys(hour){ return Array.from({length:NUM_BOXES},(_,i)=>slotKey(hour,i+1)); }
 function getDayStats(dk){
   const day=state.appointments[dk]||{}; let c=0,g=0,dan=0,cl=0,ab=0;
-  HOURS.forEach(h=>{ const s=day[h]||{},a=Number(s.amount)||0; if(!(s.patient||'').trim()&&!a) return; c++;g+=a; const sp=splitAmount(a,s.origin); dan+=sp.daniel;cl+=sp.clinic;ab+=sp.doctor; });
+  HOURS.forEach(h=>{ allBoxKeys(h).forEach(k=>{ const s=day[k]||{},a=Number(s.amount)||0; if(!(s.patient||'').trim()&&!a) return; c++;g+=a; const sp=splitAmount(a,s.origin); dan+=sp.daniel;cl+=sp.clinic;ab+=sp.doctor; }); });
   return {count:c,gross:g,daniel:dan,clinic:cl,doctor:ab};
 }
 function getAllStats(){
@@ -1108,12 +1209,11 @@ function getKnownPatients(){
   const sortedDates=Object.keys(state.appointments).sort().reverse();
   sortedDates.forEach(dk=>{
     const day=state.appointments[dk]||{};
-    HOURS.forEach(h=>{
-      const s=day[h]||{}; const name=(s.patient||'').trim(); if(!name) return;
-      const key=name.toLowerCase();
-      if(!map.has(key)) map.set(key,{name,lastSlot:{...s,dateKey:dk},count:0});
-      map.get(key).count++;
-    });
+    HOURS.forEach(h=>{ allBoxKeys(h).forEach(k=>{ const s=day[k]||{}; const name=(s.patient||'').trim(); if(!name) return;
+      const mk=name.toLowerCase();
+      if(!map.has(mk)) map.set(mk,{name,lastSlot:{...s,dateKey:dk},count:0});
+      map.get(mk).count++;
+    }); });
   });
   return Array.from(map.values()).sort((a,b)=>b.count-a.count);
 }
@@ -1141,16 +1241,27 @@ function renderCalendar(){
   HOURS.forEach(h=>{
     html+=`<tr><td class="time-cell">${pad(h)}:00</td>`;
     days.forEach(d=>{
-      const dk=toDateKey(d), slot=(state.appointments[dk]||{})[h]||{};
-      const pat=(slot.patient||'').trim(), st=slot.status||'pending';
-      if(pat){
-        html+=`<td class="slot-td"><div class="slot-appt s-${st}" onclick="openApptModal('${dk}',${h})">
-          <div class="slot-name">${escH(pat)}</div>
-          <div class="slot-type">${escH(slot.attentionType||'')}</div>
-        </div></td>`;
-      } else {
-        html+=`<td class="slot-td"><div class="slot-empty" onclick="openApptModal('${dk}',${h})">+</div></td>`;
+      const dk=toDateKey(d), day=state.appointments[dk]||{};
+      html+=`<td class="slot-td" style="padding:2px;height:auto;vertical-align:top;">`;
+      for(let b=1;b<=NUM_BOXES;b++){
+        const k=slotKey(h,b), slot=day[k]||{};
+        const pat=(slot.patient||'').trim(), st=slot.status||'pending';
+        const bname=boxesConfig[b-1]||'Box '+b;
+        if(pat){
+          html+=`<div class="slot-appt s-${st}" onclick="openApptModal('${dk}',${h},${b})" style="margin-bottom:2px;min-height:34px;">
+            <div style="display:flex;align-items:center;gap:3px;">
+              <span style="background:rgba(0,0,0,.15);border-radius:3px;padding:0 4px;font-size:9px;font-weight:800;flex-shrink:0;">${b}</span>
+              <span class="slot-name">${escH(pat)}</span>
+            </div>
+            <div class="slot-type">${escH(slot.attentionType||'')}</div>
+          </div>`;
+        } else {
+          html+=`<div class="slot-empty" onclick="openApptModal('${dk}',${h},${b})" style="height:28px;font-size:10px;color:#cbd5e1;justify-content:flex-start;padding-left:6px;gap:4px;margin-bottom:2px;">
+            <span style="font-size:9px;font-weight:700;color:#e2e8f0;">${b}</span><span>+ ${escH(bname)}</span>
+          </div>`;
+        }
       }
+      html+=`</td>`;
     });
     html+='</tr>';
   });
@@ -1169,10 +1280,13 @@ let apptStatus  = 'pending';
 let acIndex     = -1;
 let acResults   = [];
 
-function openApptModal(dateKey, hour){
-  apptContext={dateKey,hour};
-  const slot=(state.appointments[dateKey]||{})[hour]||{};
+function openApptModal(dateKey, hour, box){
+  box = box||1;
+  const k = slotKey(hour,box);
+  apptContext={dateKey,hour,box,key:k};
+  const slot=(state.appointments[dateKey]||{})[k]||{};
   const d=parseDateKey(dateKey), isNew=!(slot.patient||'').trim();
+  const bname=boxesConfig[box-1]||'Box '+box;
 
   document.getElementById('apptModalTitle').textContent=
     (isNew?'Nueva cita':'Editar cita')+' — '+d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})+' '+pad(hour)+':00';
@@ -1182,8 +1296,9 @@ function openApptModal(dateKey, hour){
   document.getElementById('apptOrigin').value=slot.origin||'propio';
   document.getElementById('apptAmount').value=slot.amount||'';
   document.getElementById('apptNotes').value=slot.notes||'';
+  document.getElementById('apptBox').value=box;
+  document.getElementById('apptBoxLabel').textContent=bname;
   document.getElementById('acDrop').classList.add('hidden');
-  // Delete button: admin only
   document.getElementById('apptDelBtn').classList.toggle('hidden', isNew || !isAdmin());
 
   selectStatus(slot.status||'pending');
@@ -1220,16 +1335,21 @@ function updateSplitPreview(){
 
 function saveAppt(){
   if(!apptContext) return;
-  const {dateKey,hour}=apptContext;
+  const {dateKey,hour,box,key}=apptContext;
+  const newBox = parseInt(document.getElementById('apptBox').value)||1;
+  const newKey = slotKey(hour,newBox);
   const slot={
     patient:       document.getElementById('apptPatient').value.trim(),
     attentionType: document.getElementById('apptType').value.trim(),
     origin:        document.getElementById('apptOrigin').value,
     amount:        Number(document.getElementById('apptAmount').value)||'',
     status:        apptStatus,
-    notes:         document.getElementById('apptNotes').value.trim()
+    notes:         document.getElementById('apptNotes').value.trim(),
+    box:           newBox
   };
-  getDayData(dateKey)[hour]=slot;
+  // If box changed, remove old key
+  if(newKey!==key) delete getDayData(dateKey)[key];
+  getDayData(dateKey)[newKey]=slot;
   state.writing=true;
   scheduleWrite(dateKey);
   setTimeout(()=>{ state.writing=false; },1200);
@@ -1241,9 +1361,9 @@ function saveAppt(){
 function deleteAppt(){
   if(!isAdmin()){ alert('Solo el administrador puede eliminar citas.'); return; }
   if(!apptContext) return;
-  const {dateKey,hour}=apptContext;
+  const {dateKey,key}=apptContext;
   if(!confirm('¿Eliminar esta cita?')) return;
-  getDayData(dateKey)[hour]={patient:'',attentionType:'',amount:'',origin:'propio',status:'pending',notes:''};
+  delete getDayData(dateKey)[key];
   scheduleWrite(dateKey);
   renderCalendar();
   closeApptModal();
@@ -1492,10 +1612,10 @@ function getPatientVisits(p){
   const fullName=patientFullName(p).toLowerCase(), first=p.nombre.toLowerCase();
   const visits=[];
   Object.entries(state.appointments).forEach(([dk,day])=>{
-    HOURS.forEach(h=>{
-      const s=day[h]||{}, n=(s.patient||'').trim().toLowerCase();
-      if(n===fullName||n===first) visits.push({dateKey:dk,hour:h,...s});
-    });
+    HOURS.forEach(h=>{ allBoxKeys(h).forEach(k=>{
+      const s=day[k]||{}, n=(s.patient||'').trim().toLowerCase();
+      if(n===fullName||n===first) visits.push({dateKey:dk,hour:h,slotKey:k,...s});
+    }); });
   });
   return visits.sort((a,b)=>b.dateKey.localeCompare(a.dateKey));
 }
@@ -1727,10 +1847,154 @@ function showView(v){
   if(v==='finanzas') renderFinanzas();
 }
 
+// ════ BOXES CONFIG ════
+function loadBoxesFromConfig(d){
+  if(d&&Array.isArray(d.names)&&d.names.length) boxesConfig=d.names.slice(0,NUM_BOXES);
+  rebuildBoxSelect();
+}
+function rebuildBoxSelect(){
+  const sel=document.getElementById('apptBox');
+  if(!sel) return;
+  sel.innerHTML=boxesConfig.slice(0,NUM_BOXES).map((n,i)=>`<option value="${i+1}">${n||'Box '+(i+1)}</option>`).join('');
+}
+function renderBoxesCfg(){
+  const c=document.getElementById('boxesList'); if(!c) return;
+  c.innerHTML=boxesConfig.slice(0,NUM_BOXES).map((n,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:12px;font-weight:700;color:#64748b;width:50px;">Box ${i+1}</span>
+      <input id="boxName_${i}" class="fi fi-sm" type="text" value="${escH(n||'Box '+(i+1))}" placeholder="Nombre de la sala" style="flex:1;">
+    </div>`).join('');
+}
+async function saveBoxesCfg(){
+  const names=Array.from({length:NUM_BOXES},(_,i)=>{ const el=document.getElementById('boxName_'+i); return el?el.value.trim()||'Box '+(i+1):'Box '+(i+1); });
+  boxesConfig=names;
+  clinicConfig.boxes=names;
+  saveClinicConfig();
+  rebuildBoxSelect();
+  renderCalendar();
+  closeCfgModal();
+}
+
+// ════ SERVICES CATALOG ════
+function getServicios(){ return serviciosCfg || DEFAULT_SERVICIOS; }
+function loadServiciosFromConfig(d){
+  if(d&&Array.isArray(d.categorias)) serviciosCfg=d.categorias;
+}
+async function saveServiciosCfg(){
+  const cats=getServicios().map((cat,ci)=>{
+    const newItems=cat.items.map((item,ii)=>{
+      const baseId=`svc_${ci}_${ii}`;
+      if(cat.tipo==='sesiones'){
+        return {...item,
+          s1:parseInt(document.getElementById(baseId+'_s1')?.value)||item.s1,
+          s3:parseInt(document.getElementById(baseId+'_s3')?.value)||item.s3,
+          s6:parseInt(document.getElementById(baseId+'_s6')?.value)||item.s6
+        };
+      }
+      return item;
+    });
+    return {...cat,items:newItems};
+  });
+  serviciosCfg=cats;
+  if(fbOK) await saveConfigDoc('servicios',{categorias:cats});
+  closeCfgModal();
+}
+function renderSvcAdmin(){
+  const pane=document.getElementById('svcAdminPane'); if(!pane) return;
+  const cats=getServicios();
+  pane.innerHTML=cats.map((cat,ci)=>`
+    <div style="margin-bottom:18px;">
+      <div style="font-size:13px;font-weight:800;color:#1a56b0;margin-bottom:8px;">💈 ${escH(cat.nombre)}</div>
+      ${cat.tipo==='sesiones'&&cat.items.length?`
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:11px;">
+            <thead><tr style="background:#f8fafc;">
+              <th style="text-align:left;padding:5px 8px;border:1px solid #e2e8f0;font-weight:700;color:#475569;">Zona</th>
+              <th style="padding:5px 8px;border:1px solid #e2e8f0;color:#475569;text-align:center;">1 Sesión</th>
+              <th style="padding:5px 8px;border:1px solid #e2e8f0;color:#475569;text-align:center;">3 Sesiones</th>
+              <th style="padding:5px 8px;border:1px solid #e2e8f0;color:#475569;text-align:center;">6 Sesiones</th>
+            </tr></thead>
+            <tbody>${cat.items.map((item,ii)=>`
+              <tr>
+                <td style="padding:4px 8px;border:1px solid #e2e8f0;font-weight:600;">${escH(item.zona)}</td>
+                <td style="border:1px solid #e2e8f0;padding:2px 4px;"><input id="svc_${ci}_${ii}_s1" type="number" value="${item.s1||0}" style="width:80px;border:none;text-align:right;font-size:11px;background:transparent;"></td>
+                <td style="border:1px solid #e2e8f0;padding:2px 4px;"><input id="svc_${ci}_${ii}_s3" type="number" value="${item.s3||0}" style="width:80px;border:none;text-align:right;font-size:11px;background:transparent;"></td>
+                <td style="border:1px solid #e2e8f0;padding:2px 4px;"><input id="svc_${ci}_${ii}_s6" type="number" value="${item.s6||0}" style="width:80px;border:none;text-align:right;font-size:11px;background:transparent;"></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>` : `<div style="font-size:11px;color:#94a3b8;font-style:italic;">Sin precios definidos aún.</div>`}
+    </div>`).join('');
+}
+
+// ════ SERVICE PICKER ════
+let svcActiveCat = 0;
+function openSvcPicker(){
+  svcActiveCat=0;
+  renderSvcCats();
+  renderSvcItems(0);
+  document.getElementById('svcModal').classList.remove('hidden');
+}
+function closeSvcPicker(){ document.getElementById('svcModal').classList.add('hidden'); }
+function renderSvcCats(){
+  const cats=getServicios();
+  document.getElementById('svcCatBtns').innerHTML=cats.map((c,i)=>
+    `<button type="button" onclick="selectSvcCat(${i})" id="svcCatBtn_${i}"
+      style="padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:2px solid ${i===svcActiveCat?'var(--blue)':'#e2e8f0'};background:${i===svcActiveCat?'var(--blue)':'#fff'};color:${i===svcActiveCat?'#fff':'#374151'};transition:all .12s;">
+      ${escH(c.nombre)}</button>`).join('');
+}
+function selectSvcCat(i){
+  svcActiveCat=i;
+  renderSvcCats();
+  renderSvcItems(i);
+}
+function renderSvcItems(ci){
+  const cat=getServicios()[ci]; if(!cat) return;
+  const pane=document.getElementById('svcItemsPane');
+  if(cat.tipo==='sesiones'&&cat.items.length){
+    pane.innerHTML=`
+      <div style="font-size:11px;color:#64748b;margin-bottom:10px;">Selecciona zona y número de sesiones:</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead><tr style="background:#f8fafc;position:sticky;top:0;">
+          <th style="text-align:left;padding:7px 10px;border:1px solid #e2e8f0;font-weight:700;">Zona</th>
+          <th style="padding:7px;border:1px solid #e2e8f0;text-align:center;white-space:nowrap;">1 Sesión</th>
+          <th style="padding:7px;border:1px solid #e2e8f0;text-align:center;white-space:nowrap;">3 Sesiones</th>
+          <th style="padding:7px;border:1px solid #e2e8f0;text-align:center;white-space:nowrap;">6 Sesiones</th>
+        </tr></thead>
+        <tbody>${cat.items.map(item=>`
+          <tr>
+            <td style="padding:6px 10px;border:1px solid #e2e8f0;font-weight:600;">${escH(item.zona)}</td>
+            ${[{n:1,v:item.s1},{n:3,v:item.s3},{n:6,v:item.s6}].map(({n,v})=>`
+              <td style="border:1px solid #e2e8f0;text-align:center;padding:4px;">
+                <button type="button" onclick="selectSvcItem('${escH(cat.nombre)} - ${escH(item.zona)} (${n} ses.)',${v})"
+                  style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;font-weight:700;transition:all .1s;"
+                  onmouseover="this.style.background='var(--blue)';this.style.color='#fff';"
+                  onmouseout="this.style.background='#eff6ff';this.style.color='#1d4ed8';">
+                  $${(v/1000).toFixed(0)}k
+                </button>
+              </td>`).join('')}
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  } else {
+    pane.innerHTML=`<div style="color:#94a3b8;font-size:13px;text-align:center;padding:24px;">Sin ítems definidos para esta categoría.<br><span style="font-size:11px;">Ve a Configuración → Servicios para agregar precios.</span></div>`;
+  }
+}
+function selectSvcItem(label, amount){
+  document.getElementById('apptType').value=label;
+  document.getElementById('apptAmount').value=amount;
+  updateSplitPreview();
+  closeSvcPicker();
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('svcModal')?.addEventListener('click',e=>{ if(e.target.id==='svcModal') closeSvcPicker(); });
+});
+
 // ════ BOOT ════
 loadLocal();
 loadClinicConfig();
 loadAuth();
+rebuildBoxSelect();
 bootSync(); // carga usuarios/config desde Firestore antes del login
 checkSession(); // shows login screen or app based on sessionStorage
 </script>
