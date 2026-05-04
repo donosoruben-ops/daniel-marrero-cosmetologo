@@ -2,6 +2,9 @@
   "firestore": {
     "rules": "firestore.rules"
   },
+  "storage": {
+    "rules": "storage.rules"
+  },
   "hosting": {
     "public": ".",
     "ignore": [
@@ -10,6 +13,7 @@
       "**/node_modules/**",
       "**/*.md",
       "firestore.rules",
+      "storage.rules",
       ".firebaserc"
     ],
     "rewrites": [

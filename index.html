@@ -7,6 +7,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root{--blue:#1a56b0;--blue2:#1e40af;--blue-lt:#dbeafe;}
@@ -197,6 +200,47 @@
       .appt-2col{grid-template-columns:1fr !important;}
       .ses-box{flex-wrap:wrap;}
     }
+
+    /* ── NAV MOBILE — scrollable horizontally ── */
+    @media (max-width:700px){
+      #topNav{
+        overflow-x:auto;
+        overflow-y:hidden;
+        -webkit-overflow-scrolling:touch;
+        padding:0 8px;
+        height:50px;
+        scrollbar-width:none;
+      }
+      #topNav::-webkit-scrollbar{display:none;}
+      #navBrand{margin-right:8px;flex-shrink:0;}
+      #navName{display:none;}
+      #navLogo{height:28px;}
+      .nav-tab{padding:4px 10px;font-size:10px;flex-shrink:0;}
+      .nav-tab i, .nav-tab svg{width:16px;height:16px;font-size:16px;}
+      #topNav .sp{flex:0 0 4px;min-width:4px;}
+      #userBadge{padding:3px 6px;font-size:10px;gap:4px;flex-shrink:0;}
+      #userBadge .role-tag{font-size:8px;padding:1px 4px;}
+      #userDisplay{max-width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+      .nav-icon-btn{padding:4px 7px;font-size:13px;flex-shrink:0;}
+    }
+
+    /* ── PRESUPUESTO MODAL — RESPONSIVE ── */
+    .pres-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .pres-items-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+    .pres-items-wrap table{min-width:520px;}
+    #presModal .modal-box{width:100%;max-width:780px;}
+    @media (max-width:640px){
+      #presModal .modal-box{
+        max-width:100% !important;width:100% !important;height:100% !important;max-height:100% !important;
+        border-radius:0 !important;
+      }
+      .pres-grid2{grid-template-columns:1fr !important;}
+      #presModal .modal-hd{border-radius:0 !important;padding:10px 12px !important;}
+      #presModal .modal-hd h3{font-size:15px !important;}
+      #presShareBar{flex-direction:column !important;gap:6px !important;padding:10px 12px !important;}
+      #presShareBar button{flex:none !important;width:100% !important;min-width:0 !important;padding:12px !important;font-size:13px !important;}
+      #presItemsList table input[type=number]{min-width:40px;}
+    }
   </style>
 </head>
 <body>
@@ -287,6 +331,13 @@
   <span id="dateLabel"></span>
   <button type="button" class="tb-btn" onclick="nextWeek()">&#8594;</button>
   <button type="button" class="tb-btn" onclick="goToday()">Hoy</button>
+  <select id="boxFilter" class="tb-btn" title="Filtrar por Box" onchange="changeBoxFilter(this.value)" style="padding:5px 8px;">
+    <option value="all">📦 Todos los boxes</option>
+    <option value="1">Box 1</option>
+    <option value="2">Box 2</option>
+    <option value="3">Box 3</option>
+    <option value="4">Box 4</option>
+  </select>
   <div style="flex:1"></div>
   <span id="profBadge">Daniel Marrero · Cosmetólogo</span>
 </div>
@@ -459,10 +510,18 @@
           <div class="field-group" style="width:90px">
             <input id="newUserPin" class="fi fi-sm" type="password" inputmode="numeric" maxlength="4" placeholder="PIN">
           </div>
+        </div>
+        <div class="add-user-form" style="margin-top:6px;">
+          <div class="field-group" style="flex:2">
+            <input id="newUserEmail" class="fi fi-sm" type="email" placeholder="Email (opcional)" autocomplete="email">
+          </div>
+          <div class="field-group" style="flex:1">
+            <input id="newUserWhatsapp" class="fi fi-sm" type="tel" placeholder="WhatsApp +56 9..." autocomplete="tel">
+          </div>
           <button type="button" class="btn-save" style="padding:7px 14px;font-size:12px;" onclick="addUser()">+ Agregar</button>
         </div>
         <div id="addUserErr" style="font-size:11px;color:#dc2626;margin-top:6px;display:none;"></div>
-        <span class="cfg-hint" style="margin-top:6px;display:block;">El PIN debe tener 4 dígitos. El colaborador solo puede ver la agenda y registrar citas.</span>
+        <span class="cfg-hint" style="margin-top:6px;display:block;">El PIN debe tener 4 dígitos. El email y WhatsApp son opcionales y se usan para enviar presupuestos.</span>
       </div>
     </div>
     <!-- Tab: Boxes -->
@@ -496,6 +555,61 @@
     <div style="flex:1;overflow-y:auto;padding:12px 14px;" id="svcItemsPane"></div>
   </div>
 </div>
+
+<!-- ══ PRESUPUESTO MODAL ══ -->
+<div id="presModal" class="modal-bg hidden">
+  <div class="modal-box" style="max-width:780px;max-height:94vh;display:flex;flex-direction:column;overflow:hidden;">
+    <div class="modal-hd" style="flex-shrink:0;">
+      <h3>📋 Crear presupuesto</h3>
+      <button type="button" onclick="closePresupuestoModal()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:16px;">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:16px;">
+      <!-- Client data -->
+      <div style="font-size:12px;font-weight:800;color:#1a56b0;margin-bottom:8px;">👤 CLIENTE</div>
+      <div class="pres-grid2" style="margin-bottom:8px;">
+        <div class="field-group"><label>Nombre completo *</label><input id="presClientName" class="fi fi-sm" type="text" placeholder="Nombre del cliente"></div>
+        <div class="field-group"><label>RUT</label><input id="presClientRut" class="fi fi-sm" type="text" placeholder="12.345.678-9"></div>
+      </div>
+      <div class="pres-grid2" style="margin-bottom:14px;">
+        <div class="field-group"><label>Email</label><input id="presClientEmail" class="fi fi-sm" type="email" placeholder="correo@ejemplo.cl"></div>
+        <div class="field-group"><label>WhatsApp / Fono</label><input id="presClientPhone" class="fi fi-sm" type="tel" placeholder="+56 9 ..."></div>
+      </div>
+      <!-- Items -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:800;color:#1a56b0;">💈 DETALLE</div>
+        <button type="button" onclick="openSvcPickerForPres()" class="btn-save" style="padding:5px 12px;font-size:11px;">+ Agregar servicio</button>
+      </div>
+      <div id="presItemsList" class="pres-items-wrap" style="margin-bottom:10px;"></div>
+      <!-- Totals -->
+      <div class="pres-grid2" style="margin-bottom:14px;">
+        <div class="field-group"><label>Descuento (CLP)</label><input id="presDescuento" type="number" class="fi fi-sm" value="0" oninput="renderPresItems()"></div>
+        <div class="field-group"><label>Validez (días)</label><input id="presValidez" type="number" class="fi fi-sm" value="15"></div>
+      </div>
+      <div class="field-group" style="margin-bottom:14px;">
+        <label>Observaciones</label>
+        <textarea id="presObs" class="fi fi-sm" rows="2" placeholder="Formas de pago, notas adicionales..."></textarea>
+      </div>
+      <!-- Totals display -->
+      <div style="background:#f8fafc;border-radius:8px;padding:10px 14px;font-size:13px;">
+        <div style="display:flex;justify-content:space-between;"><span>Subtotal:</span><strong id="presSubtotal">$0</strong></div>
+        <div style="display:flex;justify-content:space-between;color:#dc2626;"><span>Descuento:</span><strong id="presDescDisplay">-$0</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:16px;color:#1a56b0;margin-top:4px;border-top:1px solid #e2e8f0;padding-top:6px;"><span>TOTAL:</span><strong id="presTotal">$0</strong></div>
+      </div>
+    </div>
+    <!-- Share banner -->
+    <div id="presShareBar" style="padding:12px 16px;border-top:2px solid #e2e8f0;background:#f8fafc;display:flex;gap:8px;flex-wrap:wrap;flex-shrink:0;">
+      <button type="button" onclick="presShare('download')" style="flex:1;min-width:120px;background:#1a56b0;color:#fff;border:none;border-radius:7px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;">📥 Descargar PDF</button>
+      <button type="button" onclick="presShare('email')" style="flex:1;min-width:120px;background:#6366f1;color:#fff;border:none;border-radius:7px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;">📧 Email</button>
+      <button type="button" onclick="presShare('whatsapp')" style="flex:1;min-width:120px;background:#25d366;color:#fff;border:none;border-radius:7px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;">💚 WhatsApp</button>
+      <button type="button" onclick="presShare('print')" style="flex:1;min-width:100px;background:#64748b;color:#fff;border:none;border-radius:7px;padding:10px;font-size:12px;font-weight:700;cursor:pointer;">🖨 Imprimir</button>
+      <button type="button" onclick="closePresupuestoModal()" class="btn-cancel" style="min-width:90px;">Cerrar</button>
+    </div>
+    <div id="presStatus" style="display:none;padding:8px 16px;font-size:12px;text-align:center;background:#dbeafe;color:#1d4ed8;flex-shrink:0;"></div>
+  </div>
+</div>
+
+<!-- Offscreen PDF render container -->
+<div id="presPdfRender" style="position:fixed;left:-10000px;top:0;width:794px;background:#fff;padding:40px;font-family:'Segoe UI',Arial,sans-serif;color:#0f172a;"></div>
 
 <!-- ══ PATIENT PROFILE MODAL ══ -->
 <div id="patModal" class="modal-bg hidden">
@@ -534,6 +648,7 @@
     <div class="modal-ft" style="flex-shrink:0;">
       <button type="button" class="btn-del" onclick="deletePatientConfirm()" id="ppDelBtn">🗑 Eliminar</button>
       <button type="button" class="btn-outline" onclick="openEditPatientModal(viewingPatientId)">✏️ Editar</button>
+      <button type="button" class="btn-save" onclick="openPresupuestoModal(viewingPatientId)" style="background:#1a56b0;">📋 Presupuesto</button>
       <button type="button" class="btn-cancel" onclick="closePatProfileModal()">Cerrar</button>
     </div>
   </div>
@@ -747,10 +862,16 @@ let boxesConfig = [...DEFAULT_BOXES];
 let serviciosCfg = null; // loaded from Firestore
 
 // ════ FIREBASE ════
-let db=null, fbAuth=null, fbOK=false, unsubSchedule=null;
+let db=null, fbAuth=null, fbStorage=null, fbOK=false, unsubSchedule=null;
 const fbConfigured = !FIREBASE_CONFIG.apiKey.startsWith('REEMPLAZAR');
 if(fbConfigured){
-  try{ firebase.initializeApp(FIREBASE_CONFIG); db=firebase.firestore(); fbAuth=firebase.auth(); fbOK=true; }
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db=firebase.firestore();
+    fbAuth=firebase.auth();
+    try{ fbStorage=firebase.storage(); }catch(e){ console.warn('Storage not available:',e); }
+    fbOK=true;
+  }
   catch(e){ console.warn('Firebase:',e); }
 } else {
   document.getElementById('setupBanner').classList.remove('hidden');
@@ -800,16 +921,23 @@ function saveAuth(){
 }
 function getSession(){
   try{
-    const s = sessionStorage.getItem(SESSION_KEY);
+    // Prefer persistent session (localStorage); fall back to legacy sessionStorage
+    const s = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
     return s ? JSON.parse(s) : null;
   }catch(e){ return null; }
 }
 function setSession(session){
-  try{ sessionStorage.setItem(SESSION_KEY, JSON.stringify(session)); }catch(e){}
+  try{
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    sessionStorage.removeItem(SESSION_KEY);
+  }catch(e){}
   currentSession = session;
 }
 function clearSession(){
-  try{ sessionStorage.removeItem(SESSION_KEY); }catch(e){}
+  try{
+    localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+  }catch(e){}
   currentSession = null;
 }
 function isAdmin(){ return currentSession && currentSession.role === 'admin'; }
@@ -957,18 +1085,24 @@ function changeAdminPass(){
 
 // ── Admin: add/remove users ──
 function addUser(){
-  const name = document.getElementById('newUserName').value.trim();
-  const pin  = document.getElementById('newUserPin').value.trim();
-  const err  = document.getElementById('addUserErr');
+  const name  = document.getElementById('newUserName').value.trim();
+  const pin   = document.getElementById('newUserPin').value.trim();
+  const email = document.getElementById('newUserEmail').value.trim();
+  const wa    = document.getElementById('newUserWhatsapp').value.trim();
+  const err   = document.getElementById('addUserErr');
   err.style.display = 'none';
   if(!name){ err.textContent='Ingresa un nombre.'; err.style.display='block'; return; }
   if(!/^\d{4}$/.test(pin)){ err.textContent='El PIN debe tener exactamente 4 dígitos.'; err.style.display='block'; return; }
   if(usersList.find(u=>u.name.toLowerCase()===name.toLowerCase())){ err.textContent='Ya existe un colaborador con ese nombre.'; err.style.display='block'; return; }
-  usersList.push({name, pin});
+  usersList.push({name, pin, email, whatsapp:wa});
   saveAuth();
-  document.getElementById('newUserName').value = '';
-  document.getElementById('newUserPin').value = '';
+  ['newUserName','newUserPin','newUserEmail','newUserWhatsapp'].forEach(id=>document.getElementById(id).value='');
   renderUsersList();
+}
+function updateUserContact(name, field, value){
+  const u = usersList.find(x=>x.name===name); if(!u) return;
+  u[field] = value.trim();
+  saveAuth();
 }
 
 function removeUser(name){
@@ -985,13 +1119,19 @@ function renderUsersList(){
     container.innerHTML = '<div style="font-size:12px;color:#94a3b8;padding:6px 0">No hay colaboradores registrados.</div>';
     return;
   }
-  container.innerHTML = usersList.map(u => `
-    <div class="user-row">
-      <span class="user-row-name">👤 ${escH(u.name)}</span>
+  container.innerHTML = usersList.map(u => {
+    const nSafe = escH(u.name);
+    return `
+    <div class="user-row" style="flex-wrap:wrap;">
+      <span class="user-row-name">👤 ${nSafe}</span>
       <span class="user-row-pin">PIN: ••••</span>
-      <button type="button" class="user-row-del" onclick="removeUser('${escH(u.name)}')" title="Eliminar">🗑</button>
-    </div>`
-  ).join('');
+      <button type="button" class="user-row-del" onclick="removeUser('${nSafe}')" title="Eliminar">🗑</button>
+      <div style="flex-basis:100%;display:flex;gap:6px;margin-top:4px;">
+        <input type="email" class="fi fi-sm" style="flex:2;font-size:11px;" placeholder="Email" value="${escH(u.email||'')}" onchange="updateUserContact('${nSafe}','email',this.value)">
+        <input type="tel" class="fi fi-sm" style="flex:1;font-size:11px;" placeholder="WhatsApp" value="${escH(u.whatsapp||'')}" onchange="updateUserContact('${nSafe}','whatsapp',this.value)">
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ════ CLINIC CONFIG ════
@@ -1294,10 +1434,30 @@ function getKnownPatients(){
 }
 
 // ════ CALENDAR RENDER ════
+const BOX_FILTER_KEY = 'danielBoxFilter';
+function getBoxFilter(){
+  try{ return localStorage.getItem(BOX_FILTER_KEY) || 'all'; }catch(e){ return 'all'; }
+}
+function changeBoxFilter(v){
+  try{ localStorage.setItem(BOX_FILTER_KEY, v); }catch(e){}
+  renderCalendar();
+}
+function getVisibleBoxes(){
+  const f=getBoxFilter();
+  if(f==='all') return [1,2,3,4];
+  const n=parseInt(f); return (n>=1&&n<=NUM_BOXES)?[n]:[1,2,3,4];
+}
+
 function renderCalendar(){
   const days=[]; const ws=new Date(state.weekStart);
   for(let i=0;i<7;i++){ const d=new Date(ws); d.setDate(ws.getDate()+i); days.push(d); }
   const todayKey=toDateKey(today);
+  const visibleBoxes=getVisibleBoxes();
+  const singleBox = visibleBoxes.length===1;
+
+  // Sync select with current filter
+  const selEl=document.getElementById('boxFilter');
+  if(selEl && selEl.value!==getBoxFilter()) selEl.value=getBoxFilter();
 
   document.getElementById('dateLabel').textContent=
     `${days[0].toLocaleDateString('es-ES',{day:'2-digit',month:'short'})} — ${days[6].toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'})}`;
@@ -1306,9 +1466,10 @@ function renderCalendar(){
   days.forEach(d=>{
     const dk=toDateKey(d), isToday=dk===todayKey, isSel=dk===state.selectedDate;
     const stats=getDayStats(dk);
+    const boxLabel = singleBox ? ` · ${escH(boxesConfig[visibleBoxes[0]-1]||'Box '+visibleBoxes[0])}` : '';
     html+=`<th class="${isToday?'today-col':''} ${isSel?'sel-col':''}" style="cursor:pointer" onclick="selectDate('${dk}')">
       <div style="font-weight:800;font-size:13px">${d.toLocaleDateString('es-ES',{weekday:'short'}).replace('.','').toUpperCase()} ${d.getDate()}</div>
-      <div style="font-size:10px;opacity:.7">${stats.count?stats.count+' pac.':'libre'}</div>
+      <div style="font-size:10px;opacity:.7">${stats.count?stats.count+' pac.':'libre'}${boxLabel}</div>
     </th>`;
   });
   html+='</tr></thead><tbody>';
@@ -1318,7 +1479,7 @@ function renderCalendar(){
     days.forEach(d=>{
       const dk=toDateKey(d), day=state.appointments[dk]||{};
       html+=`<td class="slot-td" style="padding:2px;height:auto;vertical-align:top;">`;
-      for(let b=1;b<=NUM_BOXES;b++){
+      visibleBoxes.forEach(b=>{
         const k=slotKey(h,b), slot=day[k]||{};
         const pat=(slot.patient||'').trim(), st=slot.status||'pending';
         const bname=boxesConfig[b-1]||'Box '+b;
@@ -1335,7 +1496,7 @@ function renderCalendar(){
             <span style="font-size:9px;font-weight:700;color:#e2e8f0;">${b}</span><span>+ ${escH(bname)}</span>
           </div>`;
         }
-      }
+      });
       html+=`</td>`;
     });
     html+='</tr>';
@@ -1831,7 +1992,8 @@ function renderPacientes(){
     .sort((a,b)=>patientFullName(a).localeCompare(patientFullName(b),'es'));
   const unregList=unregistered.filter(p=>!q||p.name.toLowerCase().includes(q));
 
-  let html=`<div class="pat-card-new" onclick="openNewPatientModal()" style="grid-column:span 1;">➕ Nuevo paciente</div>`;
+  let html=`<div class="pat-card-new" onclick="openNewPatientModal()" style="grid-column:span 1;">➕ Nuevo paciente</div>
+    <div class="pat-card-new" onclick="openPresupuestoModal()" style="grid-column:span 1;background:linear-gradient(135deg,#1a56b0,#1e40af);color:#fff;border:none;">📋 Crear presupuesto</div>`;
 
   if(!regList.length&&!unregList.length){
     html+='<div style="color:#94a3b8;font-size:13px;padding:12px;">No se encontraron pacientes.</div>';
@@ -2149,6 +2311,12 @@ function renderSvcItems(ci){
   }
 }
 function selectSvcItem(label, amount, sesCount){
+  // Dispatch to presupuesto module if the picker was opened from there
+  if(typeof svcPickerTarget !== 'undefined' && svcPickerTarget === 'pres'){
+    if(typeof selectSvcItemForPres === 'function'){
+      return selectSvcItemForPres(label, amount, sesCount);
+    }
+  }
   document.getElementById('apptType').value=label;
   document.getElementById('apptAmount').value=amount;
   const n = sesCount || parseSessionCount(label);
@@ -2436,6 +2604,362 @@ loadAuth();
 rebuildBoxSelect();
 bootSync(); // carga usuarios/config desde Firestore antes del login
 checkSession(); // shows login screen or app based on sessionStorage
+
+// ════════════════════════════════════════════════════════════
+// ════ PRESUPUESTO / QUOTE MODULE ════
+// ════════════════════════════════════════════════════════════
+let presState = { items: [], patientId: null, numero: null };
+let svcPickerTarget = 'appt'; // 'appt' | 'pres'
+
+function openPresupuestoModal(patientId){
+  presState = { items: [], patientId: patientId||null, numero: null };
+  // Prefill from patient if provided
+  const p = patientId ? patientsDB[patientId] : null;
+  document.getElementById('presClientName').value  = p ? patientFullName(p) : '';
+  document.getElementById('presClientRut').value   = p ? (p.rut||'') : '';
+  document.getElementById('presClientEmail').value = p ? (p.email||'') : '';
+  document.getElementById('presClientPhone').value = p ? (p.tel1||'') : '';
+  document.getElementById('presDescuento').value = 0;
+  document.getElementById('presValidez').value   = 15;
+  document.getElementById('presObs').value       = 'Formas de pago: Efectivo / Transferencia / Débito / Crédito';
+  document.getElementById('presStatus').style.display = 'none';
+  renderPresItems();
+  // Close patient profile if open
+  const pp = document.getElementById('patProfileModal');
+  if(pp && !pp.classList.contains('hidden')) pp.classList.add('hidden');
+  document.getElementById('presModal').classList.remove('hidden');
+}
+function closePresupuestoModal(){
+  document.getElementById('presModal').classList.add('hidden');
+}
+function openSvcPickerForPres(){
+  svcPickerTarget = 'pres';
+  openSvcPicker();
+}
+// Hook into selectSvcItem: when opened for presupuesto, divert.
+const __origSelectSvcItem = (typeof selectSvcItem==='function') ? selectSvcItem : null;
+function selectSvcItemForPres(label, amount, sesCount){
+  presState.items.push({ label: label, qty: 1, precio: amount||0 });
+  closeSvcPicker();
+  svcPickerTarget = 'appt';
+  renderPresItems();
+}
+// Wrap selectSvcItem to dispatch
+(function(){
+  const orig = window.selectSvcItem;
+  window.selectSvcItem = function(label, amount, sesCount){
+    if(svcPickerTarget === 'pres'){
+      return selectSvcItemForPres(label, amount, sesCount);
+    }
+    return orig ? orig(label, amount, sesCount) : null;
+  };
+})();
+
+function presRemoveItem(i){ presState.items.splice(i,1); renderPresItems(); }
+function presUpdateItem(i, field, value){
+  if(!presState.items[i]) return;
+  if(field==='qty')    presState.items[i].qty = Math.max(1, parseInt(value)||1);
+  if(field==='precio') presState.items[i].precio = Math.max(0, parseInt(value)||0);
+  if(field==='label')  presState.items[i].label = value;
+  renderPresTotals();
+}
+
+function renderPresItems(){
+  const box = document.getElementById('presItemsList'); if(!box) return;
+  if(!presState.items.length){
+    box.innerHTML = `<div style="border:2px dashed #cbd5e1;border-radius:8px;padding:18px;text-align:center;color:#94a3b8;font-size:12px;">Sin servicios. Toca "+ Agregar servicio" para elegir del catálogo.</div>`;
+    renderPresTotals();
+    return;
+  }
+  box.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px;">
+    <thead><tr style="background:#f8fafc;">
+      <th style="text-align:left;padding:6px 8px;border:1px solid #e2e8f0;">Servicio</th>
+      <th style="padding:6px 4px;border:1px solid #e2e8f0;width:60px;">Cant</th>
+      <th style="padding:6px 4px;border:1px solid #e2e8f0;width:100px;">Precio unit.</th>
+      <th style="padding:6px 4px;border:1px solid #e2e8f0;width:100px;">Total</th>
+      <th style="padding:6px;border:1px solid #e2e8f0;width:32px;"></th>
+    </tr></thead>
+    <tbody>${presState.items.map((it,i)=>`
+      <tr>
+        <td style="border:1px solid #e2e8f0;padding:2px 4px;"><input type="text" value="${escH(it.label)}" oninput="presUpdateItem(${i},'label',this.value)" style="width:100%;border:none;font-size:12px;padding:4px;background:transparent;"></td>
+        <td style="border:1px solid #e2e8f0;padding:2px 4px;"><input type="number" value="${it.qty}" min="1" oninput="presUpdateItem(${i},'qty',this.value)" style="width:100%;border:none;text-align:center;font-size:12px;padding:4px;background:transparent;"></td>
+        <td style="border:1px solid #e2e8f0;padding:2px 4px;"><input type="number" value="${it.precio}" min="0" oninput="presUpdateItem(${i},'precio',this.value)" style="width:100%;border:none;text-align:right;font-size:12px;padding:4px;background:transparent;"></td>
+        <td style="border:1px solid #e2e8f0;padding:6px;text-align:right;font-weight:700;">${money(it.qty*it.precio)}</td>
+        <td style="border:1px solid #e2e8f0;padding:2px;text-align:center;"><button type="button" onclick="presRemoveItem(${i})" style="background:#fee2e2;color:#b91c1c;border:none;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:11px;">🗑</button></td>
+      </tr>`).join('')}
+    </tbody></table>`;
+  renderPresTotals();
+}
+function renderPresTotals(){
+  const sub = presState.items.reduce((s,it)=>s+(it.qty*it.precio),0);
+  const desc = Math.max(0, parseInt(document.getElementById('presDescuento')?.value)||0);
+  const tot = Math.max(0, sub-desc);
+  const ss = document.getElementById('presSubtotal');
+  const sd = document.getElementById('presDescDisplay');
+  const st = document.getElementById('presTotal');
+  if(ss) ss.textContent = money(sub);
+  if(sd) sd.textContent = '-'+money(desc);
+  if(st) st.textContent = money(tot);
+}
+
+function presGetData(){
+  const cliName = document.getElementById('presClientName').value.trim();
+  const sub = presState.items.reduce((s,it)=>s+(it.qty*it.precio),0);
+  const desc = Math.max(0, parseInt(document.getElementById('presDescuento').value)||0);
+  const validez = Math.max(1, parseInt(document.getElementById('presValidez').value)||15);
+  const today = new Date();
+  const until = new Date(today); until.setDate(until.getDate()+validez);
+  return {
+    cliName, cliRut: document.getElementById('presClientRut').value.trim(),
+    cliEmail: document.getElementById('presClientEmail').value.trim(),
+    cliPhone: document.getElementById('presClientPhone').value.trim(),
+    obs: document.getElementById('presObs').value.trim(),
+    items: presState.items, subtotal: sub, descuento: desc, total: sub-desc,
+    fecha: today, validez, validoHasta: until,
+    emittedBy: currentSession ? currentSession.name : 'Daniel Marrero',
+    emitterContact: getEmitterContact()
+  };
+}
+function getEmitterContact(){
+  if(!currentSession) return {};
+  if(currentSession.role==='admin') return {email:'', whatsapp:''};
+  const u = usersList.find(x=>x.name===currentSession.name);
+  return { email: u?.email||'', whatsapp: u?.whatsapp||'' };
+}
+
+async function presGetNextNumero(){
+  const y = new Date().getFullYear();
+  if(!db) return `${y}-${Date.now().toString().slice(-4)}`;
+  try{
+    await ensureAuth();
+    const ref = db.collection('_config').doc('presupuestoCounter');
+    const snap = await ref.get();
+    const curr = snap.exists ? (snap.data().value||0) : 0;
+    const next = curr+1;
+    await ref.set({value: next, year: y});
+    return `${y}-${String(next).padStart(4,'0')}`;
+  }catch(e){ console.warn('Numero:',e); return `${y}-${Date.now().toString().slice(-4)}`; }
+}
+
+function buildPresHTML(data, numero){
+  const brand = getClinicBrand();
+  const logo = brand.logo ? `<img src="${brand.logo}" style="width:80px;height:80px;object-fit:contain;border-radius:8px;">` : `<div style="width:80px;height:80px;border-radius:8px;background:#1a56b0;color:#fff;display:flex;align-items:center;justify-content:center;font-size:36px;">💆</div>`;
+  const fechaStr = data.fecha.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+  const validoStr = data.validoHasta.toLocaleDateString('es-CL',{day:'2-digit',month:'2-digit',year:'numeric'});
+  return `
+    <div style="display:flex;align-items:center;gap:18px;border-bottom:4px solid #1a56b0;padding-bottom:16px;margin-bottom:20px;">
+      ${logo}
+      <div style="flex:1;">
+        <div style="font-size:28px;font-weight:900;color:#1a56b0;letter-spacing:-.5px;">DANIEL MARRERO</div>
+        <div style="font-size:14px;color:#475569;font-weight:600;">Cosmetólogo Profesional</div>
+        ${brand.name && brand.name!=='Daniel Marrero Cosmetólogo' ? `<div style="font-size:12px;color:#64748b;margin-top:4px;">${escH(brand.name)}</div>` : ''}
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:1px;">Presupuesto</div>
+        <div style="font-size:22px;font-weight:900;color:#0f172a;">N° ${escH(numero)}</div>
+        <div style="font-size:11px;color:#475569;margin-top:4px;">Fecha: <strong>${fechaStr}</strong></div>
+        <div style="font-size:11px;color:#475569;">Válido hasta: <strong>${validoStr}</strong></div>
+      </div>
+    </div>
+
+    <div style="background:#f8fafc;border-radius:8px;padding:12px 16px;margin-bottom:18px;">
+      <div style="font-size:11px;font-weight:700;color:#1a56b0;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Cliente</div>
+      <div style="font-size:16px;font-weight:700;color:#0f172a;">${escH(data.cliName||'Cliente')}</div>
+      <div style="font-size:12px;color:#475569;margin-top:4px;display:flex;gap:18px;flex-wrap:wrap;">
+        ${data.cliRut?`<span><strong>RUT:</strong> ${escH(data.cliRut)}</span>`:''}
+        ${data.cliPhone?`<span><strong>Fono:</strong> ${escH(data.cliPhone)}</span>`:''}
+        ${data.cliEmail?`<span><strong>Email:</strong> ${escH(data.cliEmail)}</span>`:''}
+      </div>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:18px;font-size:13px;">
+      <thead>
+        <tr style="background:#1a56b0;color:#fff;">
+          <th style="padding:10px 12px;text-align:left;">Servicio</th>
+          <th style="padding:10px 8px;text-align:center;width:60px;">Cant.</th>
+          <th style="padding:10px 8px;text-align:right;width:110px;">Precio unit.</th>
+          <th style="padding:10px 8px;text-align:right;width:110px;">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.items.length ? data.items.map((it,idx)=>`
+          <tr style="background:${idx%2?'#f8fafc':'#fff'};">
+            <td style="padding:9px 12px;border-bottom:1px solid #e2e8f0;">${escH(it.label)}</td>
+            <td style="padding:9px 8px;text-align:center;border-bottom:1px solid #e2e8f0;">${it.qty}</td>
+            <td style="padding:9px 8px;text-align:right;border-bottom:1px solid #e2e8f0;">${money(it.precio)}</td>
+            <td style="padding:9px 8px;text-align:right;border-bottom:1px solid #e2e8f0;font-weight:700;">${money(it.qty*it.precio)}</td>
+          </tr>`).join('')
+          : `<tr><td colspan="4" style="padding:14px;text-align:center;color:#94a3b8;font-style:italic;">Sin detalle de servicios</td></tr>`}
+      </tbody>
+    </table>
+
+    <div style="display:flex;justify-content:flex-end;margin-bottom:18px;">
+      <div style="min-width:280px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;"><span>Subtotal:</span><span>${money(data.subtotal)}</span></div>
+        ${data.descuento>0 ? `<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#dc2626;"><span>Descuento:</span><span>-${money(data.descuento)}</span></div>` : ''}
+        <div style="display:flex;justify-content:space-between;font-size:18px;padding:8px 0;border-top:2px solid #1a56b0;margin-top:4px;font-weight:900;color:#1a56b0;"><span>TOTAL CLP:</span><span>${money(data.total)}</span></div>
+      </div>
+    </div>
+
+    ${data.obs ? `<div style="background:#fef9c3;border-left:4px solid #fbbf24;padding:10px 14px;margin-bottom:16px;border-radius:4px;">
+      <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;margin-bottom:4px;">Observaciones</div>
+      <div style="font-size:12px;color:#374151;white-space:pre-wrap;">${escH(data.obs)}</div>
+    </div>` : ''}
+
+    <div style="border-top:1px solid #e2e8f0;padding-top:12px;font-size:11px;color:#64748b;">
+      <div>Emitido por: <strong style="color:#0f172a;">${escH(data.emittedBy)}</strong></div>
+      ${(data.emitterContact?.email||data.emitterContact?.whatsapp) ? `<div style="margin-top:2px;">
+        ${data.emitterContact.email?`✉ ${escH(data.emitterContact.email)}`:''}
+        ${data.emitterContact.email && data.emitterContact.whatsapp?' · ':''}
+        ${data.emitterContact.whatsapp?`📱 ${escH(data.emitterContact.whatsapp)}`:''}
+      </div>`:''}
+      <div style="margin-top:8px;text-align:center;color:#94a3b8;font-style:italic;">Gracias por preferir nuestros servicios.</div>
+    </div>`;
+}
+
+async function presGeneratePDF(){
+  if(!presState.numero) presState.numero = await presGetNextNumero();
+  const data = presGetData();
+  const html = buildPresHTML(data, presState.numero);
+  const container = document.getElementById('presPdfRender');
+  container.innerHTML = html;
+  // Wait a tick so images render
+  await new Promise(r=>setTimeout(r, 80));
+  const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+  const imgData = canvas.toDataURL('image/jpeg', 0.92);
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({orientation:'p', unit:'pt', format:'letter'});
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const imgW  = pageW;
+  const imgH  = canvas.height * (imgW / canvas.width);
+  if(imgH <= pageH){
+    pdf.addImage(imgData, 'JPEG', 0, 0, imgW, imgH);
+  } else {
+    // Multi-page
+    let remaining = canvas.height;
+    let position = 0;
+    while(remaining > 0){
+      pdf.addImage(imgData, 'JPEG', 0, position ? -(position * imgW / canvas.width) : 0, imgW, imgH);
+      remaining -= (pageH * canvas.width / imgW);
+      position += (pageH * canvas.width / imgW);
+      if(remaining > 0) pdf.addPage();
+    }
+  }
+  const blob = pdf.output('blob');
+  return { blob, data, pdf, filename: `Presupuesto_${presState.numero}_${(data.cliName||'cliente').replace(/\s+/g,'_')}.pdf` };
+}
+
+async function presUploadToStorage(blob, filename){
+  if(!fbStorage) throw new Error('Storage no configurado');
+  await ensureAuth();
+  const path = `presupuestos/${filename}`;
+  const ref = fbStorage.ref().child(path);
+  const snap = await ref.put(blob, { contentType: 'application/pdf' });
+  const url = await snap.ref.getDownloadURL();
+  return url;
+}
+async function presSaveToFirestore(data, url){
+  if(!db) return;
+  try{
+    await db.collection('presupuestos').doc(presState.numero).set({
+      numero: presState.numero,
+      cliente: { nombre:data.cliName, rut:data.cliRut, email:data.cliEmail, telefono:data.cliPhone },
+      items: data.items, subtotal:data.subtotal, descuento:data.descuento, total:data.total,
+      obs: data.obs, fecha: data.fecha.toISOString(), validoHasta: data.validoHasta.toISOString(),
+      emittedBy: data.emittedBy, pdfUrl: url||null,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }catch(e){ console.warn('Save presupuesto:',e); }
+}
+
+function presSetStatus(msg, kind){
+  const el = document.getElementById('presStatus');
+  if(!el) return;
+  el.style.display = msg ? 'block' : 'none';
+  el.textContent = msg||'';
+  const palette = {info:['#dbeafe','#1d4ed8'], ok:['#dcfce7','#166534'], err:['#fee2e2','#b91c1c']};
+  const [bg,fg] = palette[kind||'info'];
+  el.style.background = bg; el.style.color = fg;
+}
+
+async function presShare(mode){
+  const name = document.getElementById('presClientName').value.trim();
+  if(!name){ alert('Ingresa el nombre del cliente.'); return; }
+  if(!presState.items.length){ alert('Agrega al menos un servicio al presupuesto.'); return; }
+
+  presSetStatus('Generando PDF...', 'info');
+  let built;
+  try{ built = await presGeneratePDF(); }
+  catch(e){ console.error(e); presSetStatus('Error generando PDF', 'err'); return; }
+  const { blob, data, pdf, filename } = built;
+
+  if(mode === 'print'){
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url); if(w){ w.onload = ()=>{ try{ w.print(); }catch(e){} }; }
+    presSetStatus('PDF generado. Ventana de impresión abierta.', 'ok');
+    return;
+  }
+  if(mode === 'download'){
+    pdf.save(filename);
+    presSaveToFirestore(data, null);
+    presSetStatus('PDF descargado.', 'ok');
+    return;
+  }
+
+  // email or whatsapp: need public link → Storage upload
+  presSetStatus('Subiendo PDF a la nube...', 'info');
+  let url;
+  try{ url = await presUploadToStorage(blob, filename); }
+  catch(e){
+    console.error(e);
+    presSetStatus('No se pudo subir a Storage. Descargando PDF para adjuntar manual.', 'err');
+    pdf.save(filename);
+    // Still open mail/wa with text
+    const fallbackText = presBuildMessage(data, null);
+    if(mode==='email'){
+      const to = data.cliEmail;
+      location.href = `mailto:${to}?subject=${encodeURIComponent('Presupuesto N° '+presState.numero)}&body=${encodeURIComponent(fallbackText)}`;
+    } else {
+      const phone = (data.cliPhone||'').replace(/\D/g,'');
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(fallbackText)}`, '_blank');
+    }
+    return;
+  }
+  await presSaveToFirestore(data, url);
+  const msg = presBuildMessage(data, url);
+  if(mode === 'email'){
+    const to = data.cliEmail;
+    if(!to){ alert('El cliente no tiene email registrado.'); presSetStatus('',''); return; }
+    location.href = `mailto:${to}?subject=${encodeURIComponent('Presupuesto N° '+presState.numero+' — Daniel Marrero')}&body=${encodeURIComponent(msg)}`;
+    presSetStatus('Email abierto. Link al PDF incluido.', 'ok');
+  } else if(mode === 'whatsapp'){
+    const phone = (data.cliPhone||'').replace(/\D/g,'');
+    if(!phone){ alert('El cliente no tiene WhatsApp/fono registrado.'); presSetStatus('',''); return; }
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+    presSetStatus('WhatsApp abierto. Link al PDF incluido.', 'ok');
+  }
+}
+
+function presBuildMessage(data, url){
+  const lines = [
+    `Hola ${data.cliName||''},`,
+    ``,
+    `Te envío el presupuesto N° ${presState.numero} por un total de ${money(data.total)}.`,
+    `Válido hasta: ${data.validoHasta.toLocaleDateString('es-CL')}.`,
+    ``,
+    url ? `📎 Descarga el PDF aquí:\n${url}` : `El PDF va adjunto a este mensaje.`,
+    ``,
+    `Saludos,`,
+    `${data.emittedBy} — Daniel Marrero Cosmetólogo`
+  ];
+  return lines.join('\n');
+}
+
+// Click-outside close for presupuesto modal
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('presModal')?.addEventListener('click',e=>{ if(e.target.id==='presModal') closePresupuestoModal(); });
+});
 </script>
 </body>
 </html>
