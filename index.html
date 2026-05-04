@@ -919,18 +919,34 @@ function saveAuth(){
     saveConfigDoc('users',{list:usersList});
   }
 }
+function getCookie(name){
+  const m = document.cookie.match(new RegExp('(?:^|; )'+name+'=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function setCookie(name, value, days){
+  const d = new Date(); d.setTime(d.getTime()+days*24*60*60*1000);
+  document.cookie = name+'='+encodeURIComponent(value)+';expires='+d.toUTCString()+';path=/;SameSite=Lax';
+}
+function deleteCookie(name){
+  document.cookie = name+'=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+}
 function getSession(){
   try{
-    // Prefer persistent session (localStorage); fall back to legacy sessionStorage
-    const s = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
+    // Try localStorage first, then cookie backup, then legacy sessionStorage
+    let s = localStorage.getItem(SESSION_KEY);
+    if(!s) s = getCookie(SESSION_KEY);
+    if(!s) s = sessionStorage.getItem(SESSION_KEY);
     return s ? JSON.parse(s) : null;
   }catch(e){ return null; }
 }
 function setSession(session){
+  const payload = JSON.stringify(session);
   try{
-    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+    localStorage.setItem(SESSION_KEY, payload);
     sessionStorage.removeItem(SESSION_KEY);
   }catch(e){}
+  // Cookie backup — survives ITP/localStorage wipe; 365 days
+  setCookie(SESSION_KEY, payload, 365);
   currentSession = session;
 }
 function clearSession(){
@@ -938,6 +954,7 @@ function clearSession(){
     localStorage.removeItem(SESSION_KEY);
     sessionStorage.removeItem(SESSION_KEY);
   }catch(e){}
+  deleteCookie(SESSION_KEY);
   currentSession = null;
 }
 function isAdmin(){ return currentSession && currentSession.role === 'admin'; }
@@ -2243,7 +2260,11 @@ function openSvcPicker(){
   renderSvcItems(0);
   document.getElementById('svcModal').classList.remove('hidden');
 }
-function closeSvcPicker(){ document.getElementById('svcModal').classList.add('hidden'); }
+function closeSvcPicker(){
+  const svc = document.getElementById('svcModal');
+  svc.classList.add('hidden');
+  svc.style.zIndex = '';
+}
 function renderSvcCats(){
   const cats=getServicios();
   document.getElementById('svcCatBtns').innerHTML=cats.map((c,i)=>
@@ -2635,6 +2656,9 @@ function closePresupuestoModal(){
 function openSvcPickerForPres(){
   svcPickerTarget = 'pres';
   openSvcPicker();
+  // Raise z-index so it appears above the presupuesto modal
+  const svc = document.getElementById('svcModal');
+  if(svc) svc.style.zIndex = '120';
 }
 // Hook into selectSvcItem: when opened for presupuesto, divert.
 const __origSelectSvcItem = (typeof selectSvcItem==='function') ? selectSvcItem : null;
